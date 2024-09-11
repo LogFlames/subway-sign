@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway Sign</title>
+</head>
+<body>
+    <h1>Subway Sign</h1>
+
+    <div class="holder">
+        <h2>Current Settings</h2>
+    </div>
+
+    <div class="holder">
+        <h2>Change Settings</h2>
+        <form id="stationForm">
+            <label for="station">Select Station:</label>
+            <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
+            <select id="station" name="station" size="5" style="width: 100%;">
+                <!-- Options will be dynamically added here -->
+            </select>
+            <br><br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        // Populate select options on page load
+        window.onload = async () => {
+            let stations = await (await fetch("https://transport.integration.sl.se/v1/sites?expand=true")).json();
+            const selectElement = document.getElementById('station');
+            stations.forEach(function(station) {
+                const option = document.createElement('option');
+                option.value = station.id;
+                option.text = `${station.name} (${station.note})`;
+                selectElement.appendChild(option);
+            });
+        };
+
+        // Filter stations based on user input
+        function filterStations() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const selectElement = document.getElementById('station');
+            const options = selectElement.getElementsByTagName('option');
+            
+            for (let i = 0; i < options.length; i++) {
+                const optionText = options[i].text.toLowerCase();
+                if (optionText.includes(input)) {
+                    options[i].style.display = '';
+                } else {
+                    options[i].style.display = 'none';
+                }
+            }
+        }
+    </script>
+
+</body>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .holder {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+        padding: 10px;
+        font-size: 16px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    select {
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        height: auto;
+    }
+
+    button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+</style>
+
+</html>
