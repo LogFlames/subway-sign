@@ -1,0 +1,22 @@
+{
+  "name": "subway-sign-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logflames/subway-sign.git"
+  },
+  "author": "Elias Lundell",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/logflames/subway-sign/issues"
+  },
+  "homepage": "https://github.com/logflames/subway-sign#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^4.20.0"
+  }
+}
