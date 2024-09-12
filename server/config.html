@@ -6,34 +6,54 @@
     </head>
 
     <body>
-        <h1>Subway Sign</h1>
+        <h1>T-Skylten Config Page</h1>
     
         <div class="holder">
-            <h2>Current Settings</h2>
+            <h2>Settings String</h2>
+            <div class="code-container" onclick="copyCode('configCode')">
+                <pre><code id="configCode">&lt;config incomplete - select station and lines&gt; </code></pre>
+                <pre><code id="codeCopied" class="notransition">Copied to clipboard!</code></pre>
+            </div>
         </div>
     
         <div class="holder">
-            <h2>Change Settings</h2>
+            <h2>Choose Time in Future</h2>
+            <label for="forecast">Time in future: </label>
+            <input type="number" id="forecast" name="forecast" value="120" min="0" max="1200" step="60" onchange="generateConfigString()" />
+            <hint>How long into the future should the departures be shown? The maximum is 1200 minutes (20 hours). It will only show a maximum of 3 departures per line.</hint>
+            <h2>Choose Station</h2>
             <label for="station">Select Station:</label>
             <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
             <select id="station" name="station" size="6" style="width: 100%;">
                 <!-- Options will be dynamically added here -->
             </select>
         </div>
-        <div class="holder">
-            <h2>Selected: <span id="selected_station"></span></h2>
-
+        <div class="holder" id="lineAndStopConfiguration">
+            <h2>Departures and Settings from/for <span id="selected_station"></span></h2>
+            <label for="includeDeviations">Include Deviations:</label>
+            <input type="checkbox" id="includeDeviations" name="includeDeviations" value="true" checked onchange="generateConfigString()" />
+            <hint>Includes information such as short trains, broken elevators, etc.</hint>
+            <div style="height: 20px;"></div>
+            <p>NOTE! Make sure all lines of a certain type are unchecked if you wish to exclude it.</p>
+            <table id="departuresTable">
+            </table>
         </div>
-
-
+        <div class="holder" id="additionalLinesConfiguration">
+            <h2>Include Additional Lines</h2>
+            <table id="additionalLinesTable">
+            </table>
+        </div>
     </body>
 
     <script>
         const stations = /* <!-- STATIONS --> */;
         const lines = /* <!-- LINES --> */;
-        console.log(lines);
 
-        const selected_station = document.getElementById("selected_station");
+        var departures = {"departures": [], "stop_deviations": []};
+
+        var selectedStation = null;
+
+        const selectedStationText = document.getElementById("selected_station");
 
         window.onload = async () => {
             const selectElement = document.getElementById('station');
@@ -50,15 +70,30 @@
             });
 
             filterStations();
+
+            document.querySelectorAll(".notransition").forEach((elem) => { elem.classList.remove("notransition") });
+            document.getElementById("lineAndStopConfiguration").style.display = "none";
+            document.getElementById("additionalLinesConfiguration").style.display = "none";
         };
 
         document.getElementById("station").onchange = (e) => {
+            selectedStation = e.target.value;
             let station = stations.filter(x => x.id == e.target.value)[0]
             let text = station.name;
             if (station.note) {
                 text += ` (${station.note})`;
             }
-            selected_station.innerText = text;
+            selectedStationText.innerText = text;
+            document.getElementById("lineAndStopConfiguration").style.display = "block";
+            document.getElementById("additionalLinesConfiguration").style.display = "block";
+            generateConfigString();
+
+            fetch(`/departures?site_id=${selectedStation}`)
+                .then(response => response.json())
+                .then(data => {
+                    departures = { "departures": data.departures, "stop_deviations": data.stop_deviations };
+                    regererateDeparturesTable();
+                });
         }
 
         function filterStations() {
@@ -75,6 +110,125 @@
                 }
             }
         }
+
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = code;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copiedMessage = document.getElementById('codeCopied');
+            copiedMessage.classList.add('show');
+
+            setTimeout(() => {
+                copiedMessage.classList.remove('show');
+            }, 1000);
+        }
+
+        function generateConfigString() {
+            if (!selectedStation) {
+                document.getElementById("configCode").textContent = "<config incomplete - select station and lines>";
+                return;
+            }
+
+            const configParts = [];
+            document.getElementById("forecast").value ? configParts.push(document.getElementById("forecast").value) : configParts.push("120");
+            configParts.push(selectedStation.toString());
+
+            document.getElementById("includeDeviations").checked ? configParts.push("true") : configParts.push("false");
+
+            for (let i = 0; i < departures.departures.length; i++) {
+                let includeCheckbox = document.getElementById(`includeLine${i}`);
+                if (!includeCheckbox || !includeCheckbox.checked) {
+                    continue;
+                }
+
+                let limitDirection = document.getElementById(`includeLineDirection${i}`).checked;
+
+                const departure = departures.departures[i];
+
+                let part = `${departure.line.id}`;
+
+                if (limitDirection) {
+                    part += `:${departure.direction_code}`;
+                }
+
+                if (configParts.indexOf(part) == -1) {
+                    configParts.push(part);
+                }
+            }
+
+            for (let type in lines) {
+                for (let line of lines[type]) {
+                    checkbox = document.getElementById(`additionalIncludeLine${line.id}`);
+                    if (checkbox && checkbox.checked) {
+                        if (configParts.indexOf(line.id) == -1) {
+                            configParts.push(line.id);
+                        }
+                    }
+                }
+            }
+
+            let configString = configParts.join(";");
+
+            document.getElementById("configCode").textContent = configString;
+        }
+
+        function regererateDeparturesTable() {
+            const table = document.getElementById("departuresTable");
+            table.innerHTML = "<tr> <th>Line</th> <th>Destination</th> <th>Include Line</th> <th>Limit To This Direction</th> </tr>";
+
+            const seen = [];
+            for (let i = 0; i < departures.departures.length; i++) {
+                const departure = departures.departures[i];
+                if (seen.indexOf(`${departure.line.id} ${departure.direction_code} ${departure.destination}`) != -1) {
+                    continue;
+                }
+                const row = document.createElement("tr");
+                const line = getLine(departure.line.id);
+                row.innerHTML = `
+                <td>${line.designation}</td>
+                <td>${departure.destination}</td>
+                <td><input id="includeLine${i}" type="checkbox" name="includeLine" checked onchange="generateConfigString()" /></td>
+                <td><input id="includeLineDirection${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>`;
+                table.appendChild(row);
+                seen.push(`${departure.line.id} ${departure.direction_code} ${departure.destination}`);
+            }
+
+            regerateAdditionalLinesTable();
+
+            generateConfigString();
+        }
+
+        function regerateAdditionalLinesTable() {
+            const additionalLinesTable = document.getElementById("additionalLinesTable");
+            additionalLinesTable.innerHTML = "<tr> <th>Type</th> <th>Line</th> <th>Group</th> <th>Include Line</th> </tr>";
+            for (let type in lines) {
+                for (let line of lines[type]) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                    <td>${line.transport_mode}</td>
+                    <td>${line.designation}</td>
+                    <td>${line.group_of_lines ?? ""}</td>
+                    <td><input id="additionalIncludeLine${line.id}" type="checkbox" name="includeLine" onchange="generateConfigString();" /></td>`;
+                    additionalLinesTable.appendChild(row);
+                }
+            }
+        }
+
+        function getLine(lineId) {
+            for (let type in lines) {
+                for (let line of lines[type]) {
+                    if (line.id === lineId) {
+                        return line;
+                    }
+                }
+            }
+            return null;
+        }
     </script>
 
     <style>
@@ -85,17 +239,61 @@
     }
 
     .holder {
-        margin-bottom: 20px;
-        padding: 15px;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-    }
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
 
-    form {
-        display: flex;
-        flex-direction: column;
-    }
+.holder h2 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+}
+
+.holder label {
+    font-weight: bold;
+    display: inline;
+    margin-bottom: 8px;
+}
+
+hint {
+    font-size: 0.9em;
+    color: #555;
+    display: inline;
+    margin-bottom: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+td {
+    vertical-align: middle;
+}
+
+
 
     label {
         font-weight: bold;
@@ -130,6 +328,52 @@
 
     button:hover {
         background-color: #45a049;
+    }
+
+    .code-container {
+        position: relative;
+        background-color: #f4f4f4;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid #f4f4f4;
+        border-radius: 8px;
+    }
+
+    pre {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.5;
+        background-color: #f4f4f4;
+    }
+
+    code {
+        background-color: #f4f4f4;
+        color: #111;
+        padding: 0;
+        font-family: "Courier New", Courier, monospace;
+        word-break: break-all;
+    }
+
+    pre code#codeCopied {
+        opacity: 0;
+        visibility: hidden;
+        position: absolute;
+        width: 100%;
+        transform: translate(0, -100%);
+        background-color: #f4f4f4;
+        color: #111;
+        transition: opacity 0.7s ease, visibility 0.7s ease;
+        z-index: 10;
+    }
+
+    pre code#codeCopied.show {
+        opacity: 1;
+        visibility: visible;
+        transition: none;
+    }
+
+    .notransition {
+        transition: none !important;
     }
     </style>
 </html>
