@@ -1,77 +1,100 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
-#include <WiFiClient.h>
-#include <Arduino_JSON.h>
+#include <WiFiClientSecure.h>
+#include <Preferences.h>
 
-#include "credentials.h"
-
+#define BUTTON_PIN D1
 #define UPDATE_INTERVAL 5000
-#define BUFFER_SIZE 256
+#define EEPROM_SIZE 1024
 
-const char *SL_STATIONS_URL = "http://transport.integration.sl.se/v1/sites?expand=false";
-const char *SL_LINES_URL = "http://transport.integration.sl.se/v1/lines";
-// DEPARTURES: http://transport.integration.sl.se/v1/sites/{siteId}/departures
-const char *SL_DEPARTURES_URL_START = "http://transport.integration.sl.se/v1/sites/";
-const char *SL_DEPARTURES_URL_END = "/departures";
+#define DEBUG_SERIAL false
+
+#if DEBUG_SERIAL
+#define DEBUG_PRINT(x) Serial.print(x)
+#define DEBUG_PRINTLN(x) Serial.println(x)
+#define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#define DEBUG_PRINTF(...)
+#endif
 
 ESP8266WebServer server(80);
+String ssid = "";
+String password = "";
+String remoteUrl = "";
+String configString = "";
 
-void setup()
-{
-    Serial.begin(19200);
+Preferences prefs;
+
+String url = "";
+
+unsigned long statusLEDUntil = millis();
+unsigned long lastUpdate = millis();
+
+bool APMode = false;
+
+void setup() {
+    if (DEBUG_SERIAL) Serial.begin(19200);
     pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-    Serial.println();
-    Serial.println();
-    Serial.print("Connecting to ");
-    Serial.println(WIFI_SSID);
+    prefs.begin("t-skylt");
 
-    WiFi.hostname("subway-sign");
-    WiFi.begin(WIFI_SSID, WIFI_PASSWD);
+    loadSettings();
 
-    waitForWifi();
+    delay(200);
 
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    if (digitalRead(BUTTON_PIN) == LOW) {
+        DEBUG_PRINTLN("Button pressed - starting Access Point");
+        startAccessPoint();
+        APMode = true;
+    } else {
+        DEBUG_PRINTLN("Button not pressed - connecting to WiFi");
+        connectToWiFi();
+        APMode = false;
+    }
 
-    server.on("/", HTTP_GET, handle_root);
-
+    server.on("/", handleRoot);
+    server.on("/save", HTTP_POST, handleSave);
     server.begin();
 }
 
-void loop()
-{
-    // put your main code here, to run repeatedly:
-    delay(1000);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);
+void loop() {
+    digitalWrite(LED_BUILTIN, millis() < statusLEDUntil ? LOW : HIGH);
 
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.println("Disconnected, trying to reconnect...");
+    if (APMode) {
+        if (statusLEDUntil < millis() - 1000UL) {
+            statusLEDUntil = millis() + 1000UL;
+        }
+    } else {
+        if (WiFi.status() != WL_CONNECTED) {
+            DEBUG_PRINTLN("Disconnected, trying to reconnect...");
 
-        waitForWifi();
+            waitForWifi();
 
-        Serial.println();
-        Serial.print("Connected, IP address: ");
-        Serial.println(WiFi.localIP());
+            DEBUG_PRINTLN();
+            DEBUG_PRINT("Connected, IP address: ");
+            DEBUG_PRINTLN(WiFi.localIP());
+        }
+
+        if (millis() - lastUpdate > UPDATE_INTERVAL) {
+            lastUpdate = millis();
+            //statusLEDUntil = millis() + 1000UL;
+            digitalWrite(LED_BUILTIN, LOW);
+
+            String text = httpRequest(url);
+            digitalWrite(LED_BUILTIN, HIGH);
+            DEBUG_PRINTLN(text);
+        }
     }
 
     server.handleClient();
 }
 
-void waitForWifi()
-{
-    while (WiFi.status() != WL_CONNECTED)
-    {
+void waitForWifi() {
+    while (WiFi.status() != WL_CONNECTED) {
         delay(125);
         digitalWrite(LED_BUILTIN, LOW);
         delay(125);
@@ -80,162 +103,116 @@ void waitForWifi()
         digitalWrite(LED_BUILTIN, LOW);
         delay(125);
         digitalWrite(LED_BUILTIN, HIGH);
-        Serial.print(".");
+        DEBUG_PRINT(".");
     }
 }
 
-void handle_root()
-{
-    server.send(200, "text/html", httpGETRequest(String(SL_DEPARTURES_URL_START) + "9662" + SL_DEPARTURES_URL_END));
+// Function to save settings to EEPROM
+void saveSettings(String ssid, String password, String remoteUrl, String configString) {
+    prefs.putString("ssid", ssid);
+    prefs.putString("password", password);
+    prefs.putString("remote_url", remoteUrl);
+    prefs.putString("config_string", configString);
+
+    url = remoteUrl + "/text?config=" + configString;
 }
 
-void skip_whitespace(WiFiClient* client) {
-    while (client->available()) {
-        char ch = client->read();
-        if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '\r') {
-            client->write(ch); // Write back the non-whitespace character
-            break;
-        }
-    }
+// Function to load settings from EEPROM
+void loadSettings() {
+    ssid = prefs.getString("ssid");
+    password = prefs.getString("password");
+    remoteUrl = prefs.getString("remote_url");
+    configString = prefs.getString("config_string");
+
+    url = remoteUrl + "/text?config=" + configString;
 }
 
-// Function to read a string value (assuming it's properly quoted)
-String read_string(WiFiClient* client) {
-    String result;
-    char ch;
-    while (client->available()) {
-        ch = client->read();
-        if (ch == '"') {
-            break;
-        }
-        result += ch;
-    }
-    return result;
+// Function to handle root web page
+void handleRoot() {
+    auto htmlEscape = [](const String &str) -> String {
+        String escaped = str;
+        escaped.replace("&", "&amp;");
+        escaped.replace("<", "&lt;");
+        escaped.replace(">", "&gt;");
+        escaped.replace("\"", "&quot;");
+        escaped.replace("'", "&#39;");
+        return escaped;
+    };
+
+    String page = "<html><body>"
+        "<h1>WiFi Configuration</h1>"
+        "<form action='/save' method='POST'>"
+        "SSID: <input type='text' name='ssid' value='" + htmlEscape(ssid) + "'><br>"
+        "Password: <input type='password' name='password' value='" + htmlEscape(password) + "'><br>"
+        "Remote URL: <input type='text' name='url' value='" + htmlEscape(remoteUrl) + "' placeholder='https://tskylt.vkronmar.net'><br>"
+        "Config String: <input type='text' name='config' value='" + htmlEscape(configString) + "' placeholder='120;9660;true;28'><br>"
+        "<input type='submit' value='Save'>"
+        "</form></body></html>";
+    server.send(200, "text/html", page);
 }
 
-// Function to check if the current field matches the target
-bool field_matches(const String& field_name, const String& target) {
-    return field_name.equals(target);
+// Function to handle saving the WiFi credentials
+void handleSave() {
+    ssid = server.arg("ssid");
+    password = server.arg("password");
+    remoteUrl = server.arg("url");
+    configString = server.arg("config");
+
+    saveSettings(ssid, password, remoteUrl, configString);
+
+    String page = "<html><body><h1>Settings Saved!</h1></body></html>";
+    server.send(200, "text/html", page);
 }
 
-// Function to process a nested object
-void process_object(WiFiClient* client, const String& field_name) {
-    while (client->available()) {
-        char ch = client->read();
-        if (ch == '"') {
-            String value = read_string(client);
-            if (field_matches(field_name, "destination") ||
-                field_matches(field_name, "display")) {
-                Serial.print(field_name);
-                Serial.print(": ");
-                Serial.println(value);
-            } else if (field_matches(field_name, "id")) {
-                Serial.print("line id: ");
-                Serial.println(value);
-            }
-        } else if (ch == '{') {
-            process_object(client, String());
-        } else if (ch == '}') {
-            break;
-        } else if (ch == ':') {
-            String key = read_string(client);
-            if (field_matches(key, "line")) {
-                client->read(); // consume the opening '{'
-                process_object(client, String());
-            } else {
-                process_object(client, key);
-            }
-        } else if (ch == ',') {
-            continue;
-        } else if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '\r') {
-            continue;
-        }
-    }
+// Setup access point mode
+void startAccessPoint() {
+    DEBUG_PRINTLN("Opening AP as 'T-Skylt Config'");
+    WiFi.softAP("T-Skylt Config");
+    IPAddress myIP = WiFi.softAPIP();
+    DEBUG_PRINTLN("AP IP address: ");
+    DEBUG_PRINTLN(myIP);
 }
 
-void process_stream(WiFiClient* client) {
-    while (client->available()) {
-        char ch = client->read();
-        String field_name;
-        bool in_string = false;
-        bool is_key = true;
+// Setup station mode
+void connectToWiFi() {
+    DEBUG_PRINTF("Connecting to: %s\n", ssid.c_str());
+    WiFi.hostname("T-Skylt");
+    WiFi.begin(ssid.c_str(), password.c_str());
 
-        if (ch == '"') {
-            if (in_string) {
-                if (is_key) {
-                    field_name = field_name;
-                } else {
-                    if (field_matches(field_name, "destination") ||
-                        field_matches(field_name, "display")) {
-                        Serial.print(field_name);
-                        Serial.print(": ");
-                        Serial.println(field_name);
-                    }
-                }
-                in_string = false;
-                is_key = !is_key;
-            } else {
-                in_string = true;
-                field_name = read_string(client);
-            }
-        } else if (ch == '{') {
-            process_object(client, String());
-        } else if (ch == '}') {
-            is_key = true;
-        } else if (ch == ':') {
-            is_key = false;
-        } else if (ch == ',') {
-            is_key = true;
-        } else if (ch != ' ' && ch != '\n' && ch != '\t' && ch != '\r') {
-            continue;
-        }
-    }
+    waitForWifi();
+
+    DEBUG_PRINTLN("WiFi connected");
+    DEBUG_PRINT("IP address: ");
+    DEBUG_PRINTLN(WiFi.localIP());
 }
 
-String httpGETRequest(String url)
-{
+String httpRequest(String url) {
     HTTPClient http;
     WiFiClient client;
 
     String payload = "";
 
-    Serial.print("[HTTP] begin...\n");
-    if (http.begin(client, url.c_str()))
-    {
-        Serial.print("[HTTP] GET...\n");
+    DEBUG_PRINT("[HTTP] begin...\n");
+    if (http.begin(client, url.c_str())) {
+        DEBUG_PRINT("[HTTP] GET...\n");
 
         int httpCode = http.GET();
 
-        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        DEBUG_PRINTF("[HTTP] GET... code: %d\n", httpCode);
 
-        if (httpCode > 0)
-        {
-            if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
-            {
-                WiFiClient *stream = http.getStreamPtr();
-                while (stream->available())
-                {
-                    char c = stream->read();
-                    Serial.print(c);
-                }
-
-                // process_stream(stream);
+        if (httpCode > 0) {
+            if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+                payload = http.getString();
+            } else {
+                DEBUG_PRINTF("Unexpected HTTP code: %d\n", httpCode);
             }
-            else
-            {
-                Serial.printf("Unexpected HTTP code: %d\n", httpCode);
-            }
-        }
-        else
-        {
-            Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        } else {
+            DEBUG_PRINTF("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
         }
 
         http.end();
-    }
-    else
-    {
-        Serial.printf("[HTTP] Unable to connect\n");
+    } else {
+        DEBUG_PRINTF("[HTTP] Unable to connect\n");
     }
 
     return payload;
