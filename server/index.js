@@ -43,21 +43,17 @@ setInterval(() => {
         if (new Date() - requests[req] < 30000) {
             const parts = req.split(";");
 
-            if (parts.length < 3) {
+            if (parts.length < 4) {
                 return;
             }
 
             const forecast = parts[0];
             const siteId = parts[1];
-
-            if (!siteId || !forecast) {
-                return;
-            }
-
             const includeDeviations = parts[2] == "true";
-            const includeLines = parts.slice(3);
+            const maxSecondRow = parseInt(parts[3]);
+            const includeLines = parts.slice(4);
             console.log(`Updating cache for: ${req}`);
-            get_and_update_cache(req, siteId, forecast, includeDeviations, includeLines);
+            get_and_update_cache(req, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
         }
     }
 }, 5000);
@@ -94,27 +90,27 @@ app.get('/text', async (req, res) => {
 
     const parts = req.query.config.split(";");
 
-    if (parts.length < 3) {
+    if (parts.length < 4) {
         console.error("Invalid config");
         return res.status(400).send("Invalid config");
     }
 
-    const forecast = parts[0];
-    const siteId = parts[1];
+    try {
+        const forecast = parts[0];
+        const siteId = parts[1];
+        const includeDeviations = parts[2] == "true";
+        const maxSecondRow = parseInt(parts[3]);
 
-    if (!siteId || !forecast) {
-        console.error("Missing forecast or site id");
-        return res.status(400).send("Missing forecast or site id");
+        const includeLines = parts.slice(4);
+
+        const text = await get_or_cache(req.query.config, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
+        return res.status(200).type("text/plain").send(text);
+    } catch (err) {
+        return res.status(500).send({ message: err });
     }
-
-    const includeDeviations = parts[2] == "true";
-    const includeLines = parts.slice(3);
-
-    const text = await get_or_cache(req.query.config, siteId, forecast, includeDeviations, includeLines);
-    return res.status(200).type("text/plain").send(text);
 });
 
-async function get_or_cache(query, siteId, forecast, includeDeviations, includeLines) {
+async function get_or_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
     if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
         console.log(`Serving ${query} from cache`);
         requests[query] = new Date();
@@ -125,9 +121,17 @@ async function get_or_cache(query, siteId, forecast, includeDeviations, includeL
     return await get_and_update_cache(query, siteId, forecast, includeDeviations, includeLines);
 }
 
-async function get_and_update_cache(query, siteId, forecast, includeDeviations, includeLines) {
+async function get_and_update_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
     let url = SL_DEPARTURES_URL(siteId, forecast);
-    let departures = await (await fetch(url)).json();
+
+    var text = "";
+
+    try {
+        var departures = await (await fetch(url)).json();
+    } catch (e) {
+        console.error(e);
+        return "\nUnable to query SL. Invalid config or service is down.\n";
+    }
 
     const filteredDepartures = departures.departures.filter(departure => {
         if (includeLines.indexOf(`${departure.line.id}`) != -1) {
@@ -140,8 +144,6 @@ async function get_and_update_cache(query, siteId, forecast, includeDeviations, 
 
         return false;
     });
-
-    let text = "";
 
     if (filteredDepartures.length > 0) {
         text += `${filteredDepartures[0].line.designation} ${filteredDepartures[0].destination}$${filteredDepartures[0].display}\n`;
@@ -166,6 +168,7 @@ async function get_and_update_cache(query, siteId, forecast, includeDeviations, 
 
     text += "\n";
     cache[query] = { result: text, lastUpdated: new Date() };
+
     return text;
 }
 

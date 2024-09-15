@@ -1,14 +1,16 @@
+#include <string.h>
+
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
-#include <WiFiClientSecure.h>
+#include <WiFiClient.h>
 #include <Preferences.h>
 
 #define BUTTON_PIN D1
 #define UPDATE_INTERVAL 5000
-#define EEPROM_SIZE 1024
+#define TEXT_LENGTH 2048
 
-#define DEBUG_SERIAL false
+#define DEBUG_SERIAL true
 
 #if DEBUG_SERIAL
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -34,6 +36,10 @@ unsigned long statusLEDUntil = millis();
 unsigned long lastUpdate = millis();
 
 bool APMode = false;
+
+char text[TEXT_LENGTH];
+
+WiFiClient client;
 
 void setup() {
     if (DEBUG_SERIAL) Serial.begin(19200);
@@ -83,10 +89,10 @@ void loop() {
             lastUpdate = millis();
             //statusLEDUntil = millis() + 1000UL;
             digitalWrite(LED_BUILTIN, LOW);
-
-            String text = httpRequest(url);
+            httpRequest(url);
+            //text[0] = 0;
             digitalWrite(LED_BUILTIN, HIGH);
-            DEBUG_PRINTLN(text);
+            DEBUG_PRINTF("%s\n", text);
         }
     }
 
@@ -166,8 +172,8 @@ void handleSave() {
 
 // Setup access point mode
 void startAccessPoint() {
-    DEBUG_PRINTLN("Opening AP as 'T-Skylt Config'");
-    WiFi.softAP("T-Skylt Config");
+    DEBUG_PRINTLN("Opening AP as 'T-Skylten Config'");
+    WiFi.softAP("T-Skylten Config");
     IPAddress myIP = WiFi.softAPIP();
     DEBUG_PRINTLN("AP IP address: ");
     DEBUG_PRINTLN(myIP);
@@ -176,7 +182,7 @@ void startAccessPoint() {
 // Setup station mode
 void connectToWiFi() {
     DEBUG_PRINTF("Connecting to: %s\n", ssid.c_str());
-    WiFi.hostname("T-Skylt");
+    WiFi.hostname("T-Skylten");
     WiFi.begin(ssid.c_str(), password.c_str());
 
     waitForWifi();
@@ -186,15 +192,12 @@ void connectToWiFi() {
     DEBUG_PRINTLN(WiFi.localIP());
 }
 
-String httpRequest(String url) {
+void httpRequest(String url) {
     HTTPClient http;
-    WiFiClient client;
 
-    String payload = "";
-
-    DEBUG_PRINT("[HTTP] begin...\n");
+    DEBUG_PRINTF("[HTTP] begin... to %s\n", url.c_str());
     if (http.begin(client, url.c_str())) {
-        DEBUG_PRINT("[HTTP] GET...\n");
+        DEBUG_PRINTLN("[HTTP] GET...");
 
         int httpCode = http.GET();
 
@@ -202,8 +205,11 @@ String httpRequest(String url) {
 
         if (httpCode > 0) {
             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-                payload = http.getString();
+                //DEBUG_PRINTLN(http.getString());
+                strncpy(text, http.getString().c_str(), TEXT_LENGTH - 1);
+                text[TEXT_LENGTH - 1] = 0;
             } else {
+                DEBUG_PRINTLN(http.getString());
                 DEBUG_PRINTF("Unexpected HTTP code: %d\n", httpCode);
             }
         } else {
@@ -212,8 +218,6 @@ String httpRequest(String url) {
 
         http.end();
     } else {
-        DEBUG_PRINTF("[HTTP] Unable to connect\n");
+        DEBUG_PRINTLN("[HTTP] Unable to connect");
     }
-
-    return payload;
 }
