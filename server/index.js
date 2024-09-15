@@ -125,7 +125,7 @@ app.get('/text', async (req, res) => {
 });
 
 const PORT = 8080;
-const IP = "192.168.68.76";
+const IP = "0.0.0.0";
 app.listen(PORT, IP, () => {
     console.log(`Server is running on http://${IP}:${PORT}`);
 });
