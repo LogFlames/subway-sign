@@ -101,7 +101,6 @@ app.get('/text', async (req, res) => {
         const siteId = parts[1];
         const includeDeviations = parts[2] == "true";
         const maxSecondRow = parseInt(parts[3]);
-
         const includeLines = parts.slice(4);
 
         const text = await get_or_cache(req.query.config, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
@@ -119,7 +118,7 @@ async function get_or_cache(query, siteId, forecast, maxSecondRow, includeDeviat
     }
 
     console.log(`No ${query} in cache, pulling.`);
-    return await get_and_update_cache(query, siteId, forecast, includeDeviations, includeLines);
+    return await get_and_update_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
 }
 
 async function get_and_update_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
@@ -156,7 +155,8 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
         }
     }
 
-    for (let i = 1; i < filteredDepartures.length; i++) {
+    let sr = filteredDepartures.length - 1> maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
+    for (let i = 1; i < sr; i++) {
         const departure = filteredDepartures[i];
         text += `${departure.line.designation} ${departure.destination}$${departure.display};`;
     }
