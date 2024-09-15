@@ -23,8 +23,8 @@
             <hint>How long into the future should the departures be shown? The maximum is 1200 minutes (20 hours). It will only show a maximum of 3 departures per line.</hint>
             <br><br>
             <label for="maxSecondRow">Max Departures In Second Row: </label>
-            <input type="number" id="maxSecondRow" name="maxSecondRow" value="3" min="1" max="100" step="1" onchange="generateConfigString()" />
-            <hint>How many departures should be shown on the second row? Note that this is also limited by the 'Time in future' as well as SL's API.</hint>
+            <input type="number" id="maxSecondRow" name="maxSecondRow" value="3" min="-1" max="100" step="1" onchange="generateConfigString()" />
+            <hint>How many departures should be shown on the second row? Note that this is also limited by the 'Time in future' as well as SL's API. To show all available departures within the timeslot, set this value to -1.</hint>
             <h2>Choose Station</h2>
             <label for="station">Select Station:</label>
             <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
