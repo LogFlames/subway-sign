@@ -52,13 +52,9 @@ setInterval(() => {
             const maxSecondRow = parseInt(parts[3]);
             const includeLines = parts.slice(4);
             console.log(`Updating cache for: ${req}`);
-<<<<<<< HEAD
             get_and_update_cache(req, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
-=======
-            get_and_update_cache(req, siteId, forecast, includeDeviations, includeLines);
         } else {
             delete requests[req]
->>>>>>> ad0ce01118e5b6114589561ed55e65a6ad715f22
         }
     }
 }, 5000);
@@ -115,12 +111,8 @@ app.get('/text', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
 async function get_or_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
-=======
-async function get_or_cache(query, siteId, forecast, includeDeviations, includeLines) {
     requests[query] = new Date();
->>>>>>> ad0ce01118e5b6114589561ed55e65a6ad715f22
     if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
         console.log(`Serving ${query} from cache`);
         return cache[query].result;
