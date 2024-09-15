@@ -134,50 +134,62 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
     var departures;
 
     try {
-        departures = await (await fetch(url)).json();
+        let result = await fetch(url);
+        if (result.ok) {
+            departures = await result.json();
+        } else {
+            console.error(await result.json());
+            return "\nUnable to query SL. Invalid config or service is down.\n";
+        }
     } catch (e) {
         console.error(e);
         return "\nUnable to query SL. Invalid config or service is down.\n";
     }
 
-    const filteredDepartures = departures.departures.filter(departure => {
-        if (includeLines.indexOf(`${departure.line.id}`) != -1) {
-            return true;
-        }
+    try {
+        includeLines = new Set(includeLines);
 
-        if (includeLines.indexOf(`${departure.line.id}:${departure.direction_code}`) != -1) {
-            return true;
-        }
+        const filteredDepartures = departures.departures.filter(departure => {
+            if (includeLines.has(`${departure.line.id}`)) {
+                return true;
+            }
 
-        return false;
-    });
+            if (includeLines.has(`${departure.line.id}:${departure.direction_code}`)) {
+                return true;
+            }
 
-    if (filteredDepartures.length > 0) {
-        text += `${filteredDepartures[0].line.designation} ${filteredDepartures[0].destination}$${filteredDepartures[0].display}\n`;
+            return false;
+        });
 
-        if (filteredDepartures[0].deviations) {
-            for (let i = 0; i < filteredDepartures[0].deviations.length; i++) {
-                text += `${filteredDepartures[0].deviations[i].message};`;
+        if (filteredDepartures.length > 0) {
+            text += `${filteredDepartures[0].line.designation} ${filteredDepartures[0].destination}$${filteredDepartures[0].display}\n`;
+
+            if (filteredDepartures[0].deviations) {
+                for (let i = 0; i < filteredDepartures[0].deviations.length; i++) {
+                    text += `${filteredDepartures[0].deviations[i].message};`;
+                }
             }
         }
+
+        let sr = filteredDepartures.length - 1 > maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
+        for (let i = 1; i < sr; i++) {
+            const departure = filteredDepartures[i];
+            text += `${departure.line.designation} ${departure.destination}$${departure.display};`;
+        }
+
+        if (includeDeviations) {
+            departures.stop_deviations.forEach(stop_deviation => {
+                text += `${stop_deviation.message};`;
+            });
+        }
+
+        text += "\n";
+        cache[query] = { result: text, lastUpdated: new Date() };
+        return text;
+    } catch (e) {
+        console.error(e);
+        return "Error parsing data from SL API.\n";
     }
-
-    let sr = filteredDepartures.length - 1 > maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
-    for (let i = 1; i < sr; i++) {
-        const departure = filteredDepartures[i];
-        text += `${departure.line.designation} ${departure.destination}$${departure.display};`;
-    }
-
-    if (includeDeviations) {
-        departures.stop_deviations.forEach(stop_deviation => {
-            text += `${stop_deviation.message};`;
-        });
-    }
-
-    text += "\n";
-    cache[query] = { result: text, lastUpdated: new Date() };
-
-    return text;
 }
 
 const PORT = 8080;
