@@ -205,7 +205,6 @@ void httpRequest(String url) {
 
         if (httpCode > 0) {
             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-                //DEBUG_PRINTLN(http.getString());
                 strncpy(text, http.getString().c_str(), TEXT_LENGTH - 1);
                 text[TEXT_LENGTH - 1] = 0;
             } else {
