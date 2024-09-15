@@ -79,8 +79,13 @@ app.get('/departures', async (req, res) => {
     let direction_code = req.query.direction_code;
 
     let url = SL_DEPARTURES_URL(site_id, transport, line_id, direction_code);
-    let departures = await (await fetch(url)).json();
-    return res.json(departures);
+    try {
+        let departures = await (await fetch(url)).json();
+        return res.json(departures);
+    } catch (e) {
+        console.error(e);
+        return res.json({});
+    }
 });
 
 app.get('/text', async (req, res) => {
@@ -106,7 +111,8 @@ app.get('/text', async (req, res) => {
         const text = await get_or_cache(req.query.config, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
         return res.status(200).type("text/plain").send(text);
     } catch (err) {
-        return res.status(500).send({ message: err });
+        console.error(err);
+        return res.status(500).send("Invalid config or unknown error.");
     }
 });
 
@@ -125,9 +131,10 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
     let url = SL_DEPARTURES_URL(siteId, forecast);
 
     var text = "";
+    var departures;
 
     try {
-        var departures = await (await fetch(url)).json();
+        departures = await (await fetch(url)).json();
     } catch (e) {
         console.error(e);
         return "\nUnable to query SL. Invalid config or service is down.\n";
