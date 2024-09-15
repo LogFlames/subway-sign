@@ -7,7 +7,7 @@
 
     <body>
         <h1>T-Skylten Config Page</h1>
-    
+
         <div class="holder">
             <h2>Settings String</h2>
             <div class="code-container" onclick="copyCode('configCode')">
@@ -15,7 +15,7 @@
                 <pre><code id="codeCopied" class="notransition">Copied to clipboard!</code></pre>
             </div>
         </div>
-    
+
         <div class="holder">
             <h2>Choose Time in Future</h2>
             <label for="forecast">Time in future: </label>
@@ -100,7 +100,7 @@
             const input = document.getElementById('searchInput').value.toLowerCase();
             const selectElement = document.getElementById('station');
             const options = selectElement.getElementsByTagName('option');
-            
+
             for (let i = 0; i < options.length; i++) {
                 const optionText = options[i].text.toLowerCase();
                 if (optionText.toLocaleLowerCase().includes(input)) {
@@ -192,7 +192,7 @@
                 row.innerHTML = `
                 <td>${line.designation}</td>
                 <td>${departure.destination}</td>
-                <td><input id="includeLine${i}" type="checkbox" name="includeLine" checked onchange="generateConfigString()" /></td>
+                <td><input id="includeLine${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>
                 <td><input id="includeLineDirection${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>`;
                 table.appendChild(row);
                 seen.push(`${departure.line.id} ${departure.direction_code} ${departure.destination}`);
@@ -232,66 +232,66 @@
     </script>
 
     <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 20px;
-    }
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
 
     .holder {
-    margin: 20px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
+        margin: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+    }
 
-.holder h2 {
-    font-size: 1.5em;
-    margin-bottom: 15px;
-}
+    .holder h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
 
-.holder label {
-    font-weight: bold;
-    display: inline;
-    margin-bottom: 8px;
-}
+    .holder label {
+        font-weight: bold;
+        display: inline;
+        margin-bottom: 8px;
+    }
 
-hint {
-    font-size: 0.9em;
-    color: #555;
-    display: inline;
-    margin-bottom: 15px;
-}
+    hint {
+        font-size: 0.9em;
+        color: #555;
+        display: inline;
+        margin-bottom: 15px;
+    }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
 
-th {
-    background-color: #f2f2f2;
-    font-weight: bold;
-}
+    th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
 
-tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
+    tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
 
-tr:hover {
-    background-color: #f1f1f1;
-}
+    tr:hover {
+        background-color: #f1f1f1;
+    }
 
-td {
-    vertical-align: middle;
-}
+    td {
+        vertical-align: middle;
+    }
 
 
 
