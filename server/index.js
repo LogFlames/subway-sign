@@ -1,4 +1,3 @@
-// Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -35,8 +34,8 @@ function SL_DEPARTURES_URL(site_id, forecast = 1200, transport = null, line_id =
 
 const dirname = path.dirname(__filename);
 
-app.use(bodyParser.json()); // To parse incoming JSON requests
-app.use(bodyParser.urlencoded({ extended: true })); // To parse URL-encoded data
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 setInterval(() => {
     for (req in requests) {
@@ -53,7 +52,13 @@ setInterval(() => {
             const maxSecondRow = parseInt(parts[3]);
             const includeLines = parts.slice(4);
             console.log(`Updating cache for: ${req}`);
+<<<<<<< HEAD
             get_and_update_cache(req, siteId, forecast, maxSecondRow, includeDeviations, includeLines);
+=======
+            get_and_update_cache(req, siteId, forecast, includeDeviations, includeLines);
+        } else {
+            delete requests[req]
+>>>>>>> ad0ce01118e5b6114589561ed55e65a6ad715f22
         }
     }
 }, 5000);
@@ -110,10 +115,14 @@ app.get('/text', async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 async function get_or_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
+=======
+async function get_or_cache(query, siteId, forecast, includeDeviations, includeLines) {
+    requests[query] = new Date();
+>>>>>>> ad0ce01118e5b6114589561ed55e65a6ad715f22
     if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
         console.log(`Serving ${query} from cache`);
-        requests[query] = new Date();
         return cache[query].result;
     }
 
