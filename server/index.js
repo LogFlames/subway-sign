@@ -9,6 +9,9 @@ const app = express();
 const SL_STATIONS_URL = "https://transport.integration.sl.se/v1/sites?expand=false";
 const SL_LINES_URL = "https://transport.integration.sl.se/v1/lines?transport_authority_id=1";
 
+const requests = {};
+const cache = {};
+
 function SL_DEPARTURES_URL(site_id, forecast = 1200, transport = null, line_id = null, direction_code = null) {
     let url = "https://transport.integration.sl.se/v1/sites/" + site_id + "/departures";
     const  params = [];
@@ -32,9 +35,32 @@ function SL_DEPARTURES_URL(site_id, forecast = 1200, transport = null, line_id =
 
 const dirname = path.dirname(__filename);
 
-
 app.use(bodyParser.json()); // To parse incoming JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // To parse URL-encoded data
+
+setInterval(() => {
+    for (req in requests) {
+        if (new Date() - requests[req] < 30000) {
+            const parts = req.split(";");
+
+            if (parts.length < 3) {
+                return;
+            }
+
+            const forecast = parts[0];
+            const siteId = parts[1];
+
+            if (!siteId || !forecast) {
+                return;
+            }
+
+            const includeDeviations = parts[2] == "true";
+            const includeLines = parts.slice(3);
+            console.log(`Updating cache for: ${req}`);
+            get_and_update_cache(req, siteId, forecast, includeDeviations, includeLines);
+        }
+    }
+}, 5000);
 
 app.get('/', async (req, res) => {
     let html = fs.readFileSync(path.join(dirname, "config.html")).toString();
@@ -62,12 +88,14 @@ app.get('/departures', async (req, res) => {
 
 app.get('/text', async (req, res) => {
     if (!req.query.config) {
+        console.error("No config specified");
         return res.status(400).send("No config specified");
     }
 
     const parts = req.query.config.split(";");
 
     if (parts.length < 3) {
+        console.error("Invalid config");
         return res.status(400).send("Invalid config");
     }
 
@@ -75,12 +103,29 @@ app.get('/text', async (req, res) => {
     const siteId = parts[1];
 
     if (!siteId || !forecast) {
+        console.error("Missing forecast or site id");
         return res.status(400).send("Missing forecast or site id");
     }
 
     const includeDeviations = parts[2] == "true";
     const includeLines = parts.slice(3);
 
+    const text = await get_or_cache(req.query.config, siteId, forecast, includeDeviations, includeLines);
+    return res.status(200).type("text/plain").send(text);
+});
+
+async function get_or_cache(query, siteId, forecast, includeDeviations, includeLines) {
+    if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
+        console.log(`Serving ${query} from cache`);
+        requests[query] = new Date();
+        return cache[query].result;
+    }
+
+    console.log(`No ${query} in cache, pulling.`);
+    return await get_and_update_cache(query, siteId, forecast, includeDeviations, includeLines);
+}
+
+async function get_and_update_cache(query, siteId, forecast, includeDeviations, includeLines) {
     let url = SL_DEPARTURES_URL(siteId, forecast);
     let departures = await (await fetch(url)).json();
 
@@ -120,9 +165,9 @@ app.get('/text', async (req, res) => {
     }
 
     text += "\n";
-
-    return res.status(200).type("text/plain").send(text);
-});
+    cache[query] = { result: text, lastUpdated: new Date() };
+    return text;
+}
 
 const PORT = 8080;
 const IP = "0.0.0.0";
