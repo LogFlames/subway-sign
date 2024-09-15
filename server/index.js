@@ -1,4 +1,3 @@
-// Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -35,8 +34,8 @@ function SL_DEPARTURES_URL(site_id, forecast = 1200, transport = null, line_id =
 
 const dirname = path.dirname(__filename);
 
-app.use(bodyParser.json()); // To parse incoming JSON requests
-app.use(bodyParser.urlencoded({ extended: true })); // To parse URL-encoded data
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 setInterval(() => {
     for (req in requests) {
@@ -58,6 +57,8 @@ setInterval(() => {
             const includeLines = parts.slice(3);
             console.log(`Updating cache for: ${req}`);
             get_and_update_cache(req, siteId, forecast, includeDeviations, includeLines);
+        } else {
+            delete requests[req]
         }
     }
 }, 5000);
@@ -115,9 +116,9 @@ app.get('/text', async (req, res) => {
 });
 
 async function get_or_cache(query, siteId, forecast, includeDeviations, includeLines) {
+    requests[query] = new Date();
     if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
         console.log(`Serving ${query} from cache`);
-        requests[query] = new Date();
         return cache[query].result;
     }
 
