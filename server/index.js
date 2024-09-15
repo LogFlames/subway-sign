@@ -155,7 +155,7 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
         }
     }
 
-    let sr = filteredDepartures.length - 1> maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
+    let sr = filteredDepartures.length - 1 > maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
     for (let i = 1; i < sr; i++) {
         const departure = filteredDepartures[i];
         text += `${departure.line.designation} ${departure.destination}$${departure.display};`;
