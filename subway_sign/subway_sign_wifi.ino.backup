@@ -5,22 +5,12 @@
 #include <ESP8266WebServer.h>
 #include <WiFiClient.h>
 #include <Preferences.h>
-#include <PxMatrix.h>
-#include <Ticker.h>
 
-#define BUTTON_PIN D0
-#define P_LAT D0
-#define P_A D1
-#define P_B D2
-#define P_C D8
-#define P_D D6
-#define P_OE D4
-// #define CLK D5 // Set somewhere within PxMatrix library
-// #define R0 D7  // Set somewhere within PxMatrix library
-
+#define BUTTON_PIN D1
 #define UPDATE_INTERVAL 5000
+#define TEXT_LENGTH 2048
 
-#define DEBUG_SERIAL false
+#define DEBUG_SERIAL true
 
 #if DEBUG_SERIAL
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -31,9 +21,6 @@
 #define DEBUG_PRINTLN(x)
 #define DEBUG_PRINTF(...)
 #endif
-
-Ticker display_ticker;
-PxMATRIX display(64,32,P_LAT, P_OE,P_A,P_B,P_C,P_D);
 
 ESP8266WebServer server(80);
 String ssid = "";
@@ -50,16 +37,9 @@ unsigned long lastUpdate = millis();
 
 bool APMode = false;
 
+char text[TEXT_LENGTH];
+
 WiFiClient client;
-
-uint16_t myColor = display.color565(255, 150, 30);
-
-HTTPClient http;
-
-void display_updater()
-{
-  display.display(70);
-}
 
 void setup() {
     if (DEBUG_SERIAL) Serial.begin(19200);
@@ -82,21 +62,14 @@ void setup() {
         APMode = false;
     }
 
-    pinMode(BUTTON_PIN, OUTPUT);
-
-    display.begin(16);
-    display.flushDisplay();
-    
-    display_ticker.attach_ms_scheduled_accurate(4, display_updater);
-
     server.on("/", handleRoot);
     server.on("/save", HTTP_POST, handleSave);
     server.begin();
-
-    http.begin(client, url.c_str());
 }
 
 void loop() {
+    digitalWrite(LED_BUILTIN, millis() < statusLEDUntil ? LOW : HIGH);
+
     if (APMode) {
         if (statusLEDUntil < millis() - 1000UL) {
             statusLEDUntil = millis() + 1000UL;
@@ -115,9 +88,10 @@ void loop() {
         if (millis() - lastUpdate > UPDATE_INTERVAL) {
             lastUpdate = millis();
             //statusLEDUntil = millis() + 1000UL;
-
+            digitalWrite(LED_BUILTIN, LOW);
             httpRequest(url);
             //text[0] = 0;
+            digitalWrite(LED_BUILTIN, HIGH);
             DEBUG_PRINTF("%s\n", text);
         }
     }
@@ -219,10 +193,10 @@ void connectToWiFi() {
 }
 
 void httpRequest(String url) {
-//    HTTPClient http;
+    HTTPClient http;
 
     DEBUG_PRINTF("[HTTP] begin... to %s\n", url.c_str());
-    //if (http.begin(client, url.c_str())) {
+    if (http.begin(client, url.c_str())) {
         DEBUG_PRINTLN("[HTTP] GET...");
 
         int httpCode = http.GET();
@@ -231,13 +205,8 @@ void httpRequest(String url) {
 
         if (httpCode > 0) {
             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-
-                display.clearDisplay();
-                display.setTextColor(myColor);
-                display.setCursor(2,0);
-                display.print(http.getString().c_str());
-                //strncpy(text, http.getString().c_str(), TEXT_LENGTH - 1);
-                //text[TEXT_LENGTH - 1] = 0;
+                strncpy(text, http.getString().c_str(), TEXT_LENGTH - 1);
+                text[TEXT_LENGTH - 1] = 0;
             } else {
                 DEBUG_PRINTLN(http.getString());
                 DEBUG_PRINTF("Unexpected HTTP code: %d\n", httpCode);
@@ -246,8 +215,8 @@ void httpRequest(String url) {
             DEBUG_PRINTF("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
         }
 
-        //http.end();
-    /*} else {
+        http.end();
+    } else {
         DEBUG_PRINTLN("[HTTP] Unable to connect");
-    }*/
+    }
 }
