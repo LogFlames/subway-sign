@@ -95,4 +95,17 @@ difference() {
             }
         }
     }
+    if (!left_side) {
+        union() {
+            translate([0, 60, 13]) {
+                cube([100, 11, 11]);
+            }
+            translate([0, 35 - 9 / 2, box_depth-krans_width - krans_depth - 3 - 1.9]) {
+                cube([100, 9, 3]);
+            }
+            translate([2, 35 - 22 / 2, box_depth-krans_width - krans_depth - 3 - 1.9]) {
+                cube([100, 22, 4.9]);
+            }
+        }
+    }
 }
