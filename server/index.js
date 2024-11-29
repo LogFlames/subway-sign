@@ -57,7 +57,7 @@ setInterval(() => {
             delete requests[req]
         }
     }
-}, 5000);
+}, 15000);
 
 app.get('/', async (req, res) => {
     let html = fs.readFileSync(path.join(dirname, "config.html")).toString();
@@ -116,9 +116,13 @@ app.get('/text', async (req, res) => {
     }
 });
 
+app.get("/display", async (req, res) => {
+    return res.sendFile(path.join(__dirname, "display.html"));
+});
+
 async function get_or_cache(query, siteId, forecast, maxSecondRow, includeDeviations, includeLines) {
     requests[query] = new Date();
-    if (query in cache && new Date() - cache[query].lastUpdated < 10000) {
+    if (query in cache && new Date() - cache[query].lastUpdated < 30000) {
         console.log(`Serving ${query} from cache`);
         return cache[query].result;
     }

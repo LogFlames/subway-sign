@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Subway Sign</title> 
+    </head>
+    <body>
+        <h1>Subway Sign</h1>
+        <table id="stations"> </table>
+    </body>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const config = params.get("config");
+
+        update = () => {
+            fetch(`/text?config=${config}`).then(
+                res => res.text()).then(
+                    text => {
+                        const parts = text.split("\n");
+                        let lines = [parts[0], ...parts[1].split(";")];
+                        lines = lines.filter(line => line.length > 0);
+                        document.getElementById("stations").innerHTML = "";
+
+                        const headerTr = document.createElement("tr");
+                        headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th><th class='time header'>Time</th>`;
+                        document.getElementById("stations").appendChild(headerTr);
+
+                        for (let line of lines) {
+                            const lineCandidate = line.split(" ")[0];
+                            console.log(lineCandidate);
+                            console.log(lineCandidate.length);
+                            if (lineCandidate.match(/^[0-9]+[A-Za-z]?$/)) {
+                                const [destination, time] = line.slice(lineCandidate.length).split("$");
+
+                                const tr = document.createElement("tr");
+                                const lineTd = document.createElement("td");
+                                lineTd.innerText = lineCandidate;
+                                lineTd.className = "line";
+                                tr.appendChild(lineTd);
+
+                                const destinationTd = document.createElement("td");
+                                destinationTd.innerText = destination;
+                                destinationTd.className = "destination";
+                                tr.appendChild(destinationTd);
+
+                                const timeTd = document.createElement("td");
+                                timeTd.innerText = time;
+                                timeTd.className = "time";
+                                tr.appendChild(timeTd); 
+
+                                document.getElementById("stations").appendChild(tr);
+                            } else {
+                                const tr = document.createElement("tr");
+                                const infoTd = document.createElement("td");
+                                infoTd.innerText = line;
+                                infoTd.className = "info";
+                                infoTd.colSpan = "3";
+
+
+                                tr.appendChild(infoTd);
+
+                                document.getElementById("stations").appendChild(tr);
+                            }
+                        }
+            })
+        }
+
+        setInterval(update, 15000);
+        setTimeout(update, 0);
+    </script>
+
+    <style>
+        .line {
+            width: 20%;
+            text-align: left;
+        }
+
+        .destination {
+            text-align: left;
+            width: 60%;
+        }
+
+        .time {
+            text-align: left;
+            width: 20%;
+        }
+
+        .info {
+            width: 100%;
+        }
+
+    </style>
+</html>
