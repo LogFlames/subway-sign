@@ -72,6 +72,22 @@ app.get('/', async (req, res) => {
     return res.status(200).send(html);
 });
 
+app.get('/station', async (req, res) => {
+    if (!req.query.site_id) {
+        console.error("No site_id specified");
+        return res.status(400).send("No site_id specified");
+    }
+
+    let sites = await (await fetch(SL_STATIONS_URL)).json();
+    sites = sites.filter(site => site.id == req.query.site_id);
+    if (sites.length == 0) {
+        return res.status(404).send("No station found");
+    }
+
+    sites = sites[0];
+    return res.status(200).json(sites);
+});
+
 app.get('/departures', async (req, res) => {
     let site_id = req.query.site_id;
     let transport = req.query.transport;

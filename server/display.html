@@ -28,6 +28,7 @@
 <script>
     const params = new URLSearchParams(window.location.search);
     const config = params.get("config");
+    const siteId = config.split(";")[1];
 
     function getLineColor(lineNumber) {
         // Specifika linjenummer
@@ -152,6 +153,10 @@
 
     // Starta klockan direkt när sidan laddas
     updateClock();
+
+    fetch("/station?site_id=" + siteId).then(response => response.json()).then(station => {
+        document.getElementById("stationTitle").innerText = station.name;
+    });
 
 </script>
 
