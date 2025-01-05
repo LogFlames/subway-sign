@@ -1,94 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Subway Sign</title> 
-    </head>
-    <body>
-        <h1>Subway Sign</h1>
+<head>
+    <meta charset="UTF-8">
+    <title>Subway Sign</title> 
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&family=Sawarabi+Gothic&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="flex">
+            <div class="flex-item-1">
+                <a href="https://t-skylten.vkronmar.net"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0, 0, 61, 48" style="width: auto; height: 90px;"><title>SL</title><path d="M30.3 41.703a23.845 23.845 0 0 0 16.972-7.03 23.845 23.845 0 0 0 7.03-16.972v-.493h-2.815v.493c0 5.66-2.204 10.98-6.205 14.982A21.049 21.049 0 0 1 30.3 38.888c-5.66 0-10.98-2.203-14.982-6.205A21.048 21.048 0 0 1 9.113 17.7v-.493H6.298v.493a23.844 23.844 0 0 0 7.03 16.972 23.845 23.845 0 0 0 16.972 7.03zm0-38.888c8.208 0 14.886 6.678 14.886 14.886 0 8.209-6.678 14.887-14.886 14.887-8.208 0-14.887-6.678-14.887-14.887 0-8.208 6.679-14.886 14.887-14.886zm0 32.588c4.728 0 9.173-1.842 12.517-5.185A17.586 17.586 0 0 0 48 17.701c0-4.728-1.84-9.173-5.184-12.516A17.586 17.586 0 0 0 30.3 0a17.586 17.586 0 0 0-12.517 5.185A17.586 17.586 0 0 0 12.6 17.7c0 4.729 1.84 9.174 5.184 12.517A17.586 17.586 0 0 0 30.3 35.403zm27.485-18.195v.493c0 7.342-2.859 14.244-8.05 19.435-5.191 5.191-12.094 8.05-19.435 8.05-7.341 0-14.244-2.859-19.435-8.05-5.191-5.191-8.05-12.093-8.05-19.435v-.493H0v.493c0 4.09.801 8.058 2.382 11.795a30.197 30.197 0 0 0 6.493 9.63A30.2 30.2 0 0 0 30.3 48.002a30.2 30.2 0 0 0 21.425-8.875 30.199 30.199 0 0 0 6.493-9.63A30.113 30.113 0 0 0 60.6 17.7v-.493h-2.815zm-17.02 4.213H35.53v-11.22h-3.032v13.926h8.267v-2.706zm-15.191.247c-2.36 0-3.993-1.543-3.993-1.543l-1.686 2.074s2.178 2.12 5.621 2.12c3.07 0 5.055-1.686 5.055-4.294 0-2.732-2.168-3.636-4.511-4.205-2.718-.65-2.85-1.101-2.85-1.843 0-.812.686-1.316 1.791-1.316 1.732 0 3.085 1.013 3.085 1.013l1.707-2.104s-1.748-1.558-4.754-1.558c-2.837 0-4.744 1.678-4.744 4.175 0 2.64 1.71 3.57 4.664 4.284 2.696.623 2.696 1.162 2.696 1.785 0 .87-.798 1.412-2.081 1.412z" fill="white" fill-rule="evenodd"></path></svg></a>
+            </div>
+            <div class="flex-item-2">
+                <h1 id="stationTitle">T-Skylten</h1>
+            </div>
+            <div class="flex-item-3 clock" id="clock">
+                <p>Test 2</p>
+            </div>
+        </div>
         <table id="stations"> </table>
-    </body>
+    </div>
+</body>
 
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const config = params.get("config");
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const config = params.get("config");
 
-        update = () => {
-            fetch(`/text?config=${config}`).then(
-                res => res.text()).then(
-                    text => {
-                        const parts = text.split("\n");
-                        let lines = [parts[0], ...parts[1].split(";")];
-                        lines = lines.filter(line => line.length > 0);
-                        document.getElementById("stations").innerHTML = "";
+    function getLineColor(lineNumber) {
+        // Specifika linjenummer
+        if (lineNumber === 7) {
+            return "#747770"; // Spårväg city
+        } else if (lineNumber === 30 || lineNumber === 31) {
+            return "#b65f1f"; // Tvärbanan
+        } else if ([172, 173, 174, 176, 177, 180, 185, 670, 676].includes(lineNumber)) {
+            return "blue"; //Blåa bussar
 
-                        const headerTr = document.createElement("tr");
-                        headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th><th class='time header'>Time</th>`;
-                        document.getElementById("stations").appendChild(headerTr);
+        // Intervall av linjenummer
+        } else if (lineNumber >= 10 && lineNumber <= 11) {
+            return "#007db8"; // Tunnelbanelinjer 10-11
+        } else if (lineNumber >= 13 && lineNumber <= 14) {
+            return "#d71d24"; // Tunnelbanelinjer 13-14
+        } else if (lineNumber >= 17 && lineNumber <= 19) {
+            return "#148541"; // Tunnelbanelinjer 17-19
+        } else if (lineNumber >= 27 && lineNumber <= 29) {
+            return "#9f599a"; // Roslagsbanan 27-29
+        } else if (lineNumber >= 40 && lineNumber <= 48) {
+            return "#cc417f"; // Pendeltåg 40-48
+        } else if (lineNumber >= 1 && lineNumber <= 6) {
+            return "blue"; // Busslinjer 1-6
+        } else if (lineNumber >= 30) {
+            return "#73777d"; // Busslinjer 30 och uppåt
 
-                        for (let line of lines) {
-                            const lineCandidate = line.split(" ")[0];
-                            console.log(lineCandidate);
-                            console.log(lineCandidate.length);
-                            if (lineCandidate.match(/^[0-9]+[A-Za-z]?$/)) {
-                                const [destination, time] = line.slice(lineCandidate.length).split("$");
+        // Ingen färg för ogiltiga linjenummer
+        } else {
+            return "";
+        }
+    }
 
-                                const tr = document.createElement("tr");
-                                const lineTd = document.createElement("td");
-                                lineTd.innerText = lineCandidate;
-                                lineTd.className = "line";
-                                tr.appendChild(lineTd);
+    update = () => {
+        fetch(`/text?config=${config}`).then(
+            res => res.text()).then(
+                text => {
+                    const parts = text.split("\n");
+                    let lines = [parts[0], ...parts[1].split(";")];
+                    lines = lines.filter(line => line.length > 0);
+                    document.getElementById("stations").innerHTML = "";
 
-                                const destinationTd = document.createElement("td");
-                                destinationTd.innerText = destination;
-                                destinationTd.className = "destination";
-                                tr.appendChild(destinationTd);
+                    // Skapa tabellhuvudet
+                    const headerTr = document.createElement("tr");
+                    headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th><th class='time header'>Time</th>`;
+                    document.getElementById("stations").appendChild(headerTr);
 
-                                const timeTd = document.createElement("td");
-                                timeTd.innerText = time;
-                                timeTd.className = "time";
-                                tr.appendChild(timeTd); 
+                    for (let line of lines) {
+                        const lineCandidate = line.split(" ")[0];
+                        if (lineCandidate.match(/^[0-9]+[A-Za-z]?$/)) {
+                            const [destination, time] = line.slice(lineCandidate.length).split("$");
 
-                                document.getElementById("stations").appendChild(tr);
-                            } else {
-                                const tr = document.createElement("tr");
-                                const infoTd = document.createElement("td");
-                                infoTd.innerText = line;
-                                infoTd.className = "info";
-                                infoTd.colSpan = "3";
+                            const tr = document.createElement("tr");
 
+                            // Skapa linje-cellen och sätt färg
+                            const lineTd = document.createElement("td");
+                            lineTd.innerText = lineCandidate;
+                            lineTd.className = "line";
 
-                                tr.appendChild(infoTd);
-
-                                document.getElementById("stations").appendChild(tr);
+                            const lineNumber = parseInt(lineCandidate.trim(), 10); // Konvertera till nummer
+                            if (!isNaN(lineNumber)) {
+                                const color = getLineColor(lineNumber); // Hämta färg
+                                if (color) {
+                                    lineTd.style.backgroundColor = color; // Ställ in bakgrundsfärg
+                                    lineTd.style.color = "white"; // Gör texten synlig
+                                    lineTd.style.fontWeight = "bold"; // För bättre läsbarhet
+                                }
                             }
+
+                            tr.appendChild(lineTd);
+
+                            // Skapa destination- och tid-celler
+                            const destinationTd = document.createElement("td");
+                            destinationTd.innerText = destination;
+                            destinationTd.className = "destination";
+                            tr.appendChild(destinationTd);
+
+                            const timeTd = document.createElement("td");
+                            timeTd.innerText = time;
+                            timeTd.className = "time";
+                            tr.appendChild(timeTd);
+
+                            document.getElementById("stations").appendChild(tr);
+                        } else {
+                            // Om raden är information, skapa varningsikon och slå ihop de två kolumnerna
+                            const tr = document.createElement("tr");
+
+                            // Kolumn 1: Varningsikon
+                            const warningTd = document.createElement("td");
+                            warningTd.className = "warning";
+                            warningTd.innerHTML = "⚠️";
+                            tr.appendChild(warningTd);
+
+                            // Kolumn 2: Informationsmeddelande med colSpan="2"
+                            const infoTd = document.createElement("td");
+                            infoTd.className = "info";
+                            infoTd.colSpan = "2"; // Slår ihop kolumn 2 och 3
+                            infoTd.innerText = line;
+                            tr.appendChild(infoTd);
+
+                            document.getElementById("stations").appendChild(tr);
                         }
+                    }
             })
-        }
+    }
 
-        setInterval(update, 15000);
-        setTimeout(update, 0);
-    </script>
+    // Uppdatera tabellen med jämna mellanrum
+    setInterval(update, 15000);
+    setTimeout(update, 0);
 
-    <style>
-        .line {
-            width: 20%;
-            text-align: left;
-        }
+    // Klocka
+    function updateClock() {
+        const clockElement = document.getElementById('clock');
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
 
-        .destination {
-            text-align: left;
-            width: 60%;
-        }
+    // Uppdatera klockan varje sekund
+    setInterval(updateClock, 1000);
 
-        .time {
-            text-align: left;
-            width: 20%;
-        }
+    // Starta klockan direkt när sidan laddas
+    updateClock();
 
-        .info {
-            width: 100%;
-        }
+</script>
 
-    </style>
+<style>
+    /* General CSS */
+    body {
+        background-color: #3e4145;
+        font-family: "Public Sans", sans-serif;
+        font-size: 24px;
+        color: #FFF;
+    }
+
+    .container {
+        background-color: #000;
+        padding: 1% 4%;
+        margin: 2% 3%;
+        border-radius: 10px;
+    }
+
+    #stations {
+        font-size: 24px;
+    }
+
+    .clock {
+        font-family: 'Courier New', monospace;
+        text-align: right;
+        letter-spacing: 2px;
+        font-weight: bold;
+        font-size: 4rem;
+    }
+
+    /* TEXT */
+    h1 {
+        font-size: 54px;
+    }
+
+    /* Flexbox */
+    .flex {
+        display: flex;
+        flex-direction: column;
+        flex-flow: row wrap;
+        flex-wrap: nowrap;
+    }
+
+    .flex-item-1 {
+        flex-grow: 1;
+        flex-basis: auto;
+        display: block;
+        margin: auto;
+        text-align: left;
+        padding: 1%;
+    }
+
+    .flex-item-2 {
+        flex-grow: 10;
+    }
+
+    .flex-item-3 {
+        flex-grow: 3;
+        flex-basis: auto;
+        display: block;
+        margin: auto;
+    }
+
+    /* Table */
+    table {
+        border-collapse: separate;
+        width: 100%;
+        border-spacing: 0 35px;
+        vertical-align: middle;
+    }
+
+    table td {
+        font-size: 32px !important;
+    }
+
+    .header {
+        font-weight: 600 !important;
+        font-size: 38px;
+        border-bottom: 2px solid !important;
+        border-radius: 0px !important;
+    }
+
+    .line {
+        width: auto;
+        text-align: center;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-left: 100px;
+        border: 20px;
+        padding: 8px 0px;
+    }
+
+    .destination {
+        text-align: left;
+        width: 72%;
+        padding-left: 3%;
+    }
+
+    .time {
+        text-align: left;
+        width: 20%;
+    }
+
+    .info {
+        width: 100%;
+        font-size: 1rem;
+        padding: 5px 10px;
+        text-align: left;
+    }
+
+    /* Varningsikon och informationsrader */
+    .warning {
+        text-align: center;
+        font-size: 3rem !important;
+    }
+
+    /* Slå ihop de två kolumnerna för information */
+    .info {
+        padding-left: 3%;
+        font-size: 1rem;
+        text-align: left;
+    }
+</style>
 </html>

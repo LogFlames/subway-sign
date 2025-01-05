@@ -1,248 +1,272 @@
 <!DOCTYPE html>
 
 <html>
-    <head>
-        <title>T-Skylten Config Page</title>
-    </head>
+<head>
+    <title>T-Skylten Config Page</title>
+</head>
 
-    <body>
-        <h1>T-Skylten Config Page</h1>
+<body>
+    <h1>T-Skylten Config Page</h1>
 
-        <div class="holder">
-            <h2>Settings String</h2>
-            <div class="code-container" onclick="copyCode('configCode')">
-                <pre><code id="configCode">&lt;config incomplete - select station and lines&gt; </code></pre>
-                <pre><code id="codeCopied" class="notransition">Copied to clipboard!</code></pre>
-            </div>
+    <div class="holder">
+        <h2>Settings String</h2>
+        <div class="code-container" onclick="copyCode('configCode')">
+            <pre><code id="configCode">&lt;config incomplete - select station and lines&gt; </code></pre>
+            <pre><code id="codeCopied" class="notransition">Copied to clipboard!</code></pre>
         </div>
-
-        <div class="holder">
-            <h2>Choose Time in Future</h2>
-            <label for="forecast">Time in future: </label>
-            <input type="number" id="forecast" name="forecast" value="120" min="0" max="1200" step="60" onchange="generateConfigString()" />
-            <hint>How long into the future should the departures be shown? The maximum is 1200 minutes (20 hours). It will only show a maximum of 3 departures per line.</hint>
-            <br><br>
-            <label for="maxSecondRow">Max Departures In Second Row: </label>
-            <input type="number" id="maxSecondRow" name="maxSecondRow" value="3" min="-1" max="100" step="1" onchange="generateConfigString()" />
-            <hint>How many departures should be shown on the second row? Note that this is also limited by the 'Time in future' as well as SL's API. To show all available departures within the timeslot, set this value to -1.</hint>
-            <h2>Choose Station</h2>
-            <label for="station">Select Station:</label>
-            <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
-            <select id="station" name="station" size="6" style="width: 100%;">
-                <!-- Options will be dynamically added here -->
-            </select>
+        <div>
+            <a id="configLink" href="#" target="_blank" class="button">Öppna display</a>
         </div>
-        <div class="holder" id="lineAndStopConfiguration">
-            <h2>Departures and Settings from/for <span id="selected_station"></span></h2>
-            <label for="includeDeviations">Include Deviations:</label>
-            <input type="checkbox" id="includeDeviations" name="includeDeviations" value="true" checked onchange="generateConfigString()" />
-            <hint>Includes information such as short trains, broken elevators, etc.</hint>
-            <div style="height: 20px;"></div>
-            <p>NOTE! Make sure all lines of a certain type are unchecked if you wish to exclude it.</p>
-            <table id="departuresTable">
-            </table>
-        </div>
-        <div class="holder" id="additionalLinesConfiguration">
-            <h2>Include Additional Lines</h2>
-            <table id="additionalLinesTable">
-            </table>
-        </div>
-    </body>
+    </div>
 
-    <script>
-        const stations = /* <!-- STATIONS --> */;
-        const lines = /* <!-- LINES --> */;
+    <div class="holder">
+        <h2>Choose Time in Future</h2>
+        <label for="forecast">Time in future: </label>
+        <input type="number" id="forecast" name="forecast" value="120" min="0" max="1200" step="60" onchange="generateConfigString()" />
+        <hint>How long into the future should the departures be shown? The maximum is 1200 minutes (20 hours). It will only show a maximum of 3 departures per line.</hint>
+        <br><br>
+        <label for="maxSecondRow">Max Departures In Second Row: </label>
+        <input type="number" id="maxSecondRow" name="maxSecondRow" value="3" min="-1" max="100" step="1" onchange="generateConfigString()" />
+        <hint>How many departures should be shown on the second row? Note that this is also limited by the 'Time in future' as well as SL's API. To show all available departures within the timeslot, set this value to -1.</hint>
+        <h2>Choose Station</h2>
+        <label for="station">Select Station:</label>
+        <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
+        <select id="station" name="station" size="6" style="width: 100%;">
+            <!-- Options will be dynamically added here -->
+        </select>
+    </div>
+    <div class="holder" id="lineAndStopConfiguration">
+        <h2>Departures and Settings from/for <span id="selected_station"></span></h2>
+        <label for="includeDeviations">Include Deviations:</label>
+        <input type="checkbox" id="includeDeviations" name="includeDeviations" value="true" checked onchange="generateConfigString()" />
+        <hint>Includes information such as short trains, broken elevators, etc.</hint>
+        <div style="height: 20px;"></div>
+        <p>NOTE! Make sure all lines of a certain type are unchecked if you wish to exclude it.</p>
+        <table id="departuresTable">
+        </table>
+    </div>
+    <div class="holder" id="additionalLinesConfiguration">
+        <h2>Include Additional Lines</h2>
+        <table id="additionalLinesTable">
+        </table>
+    </div>
+</body>
 
-        var departures = {"departures": [], "stop_deviations": []};
+<script>
+    const stations = /* <!-- STATIONS --> */;
+    const lines = /* <!-- LINES --> */;
 
-        var selectedStation = null;
+    var departures = {"departures": [], "stop_deviations": []};
 
-        const selectedStationText = document.getElementById("selected_station");
+    var selectedStation = null;
 
-        window.onload = async () => {
-            const selectElement = document.getElementById('station');
-            stations.forEach(function(station) {
-                const option = document.createElement('option');
-                option.value = station.id;
-                let text = station.name;
-                if (station.note) {
-                    text += ` (${station.note})`;
-                }
-                option.text = text;
+    const selectedStationText = document.getElementById("selected_station");
 
-                selectElement.appendChild(option);
-            });
-
-            filterStations();
-
-            document.querySelectorAll(".notransition").forEach((elem) => { elem.classList.remove("notransition") });
-            document.getElementById("lineAndStopConfiguration").style.display = "none";
-            document.getElementById("additionalLinesConfiguration").style.display = "none";
-        };
-
-        document.getElementById("station").onchange = (e) => {
-            selectedStation = e.target.value;
-            let station = stations.filter(x => x.id == e.target.value)[0]
+    window.onload = async () => {
+        const selectElement = document.getElementById('station');
+        stations.forEach(function(station) {
+            const option = document.createElement('option');
+            option.value = station.id;
             let text = station.name;
             if (station.note) {
                 text += ` (${station.note})`;
             }
-            selectedStationText.innerText = text;
-            document.getElementById("lineAndStopConfiguration").style.display = "block";
-            document.getElementById("additionalLinesConfiguration").style.display = "block";
-            generateConfigString();
+            option.text = text;
 
-            fetch(`/departures?site_id=${selectedStation}`)
-                .then(response => response.json())
-                .then(data => {
-                    departures = { "departures": data.departures, "stop_deviations": data.stop_deviations };
-                    regererateDeparturesTable();
-                });
+            selectElement.appendChild(option);
+        });
+
+        filterStations();
+
+        document.querySelectorAll(".notransition").forEach((elem) => { elem.classList.remove("notransition") });
+        document.getElementById("lineAndStopConfiguration").style.display = "none";
+        document.getElementById("additionalLinesConfiguration").style.display = "none";
+    };
+
+    document.getElementById("station").onchange = (e) => {
+        selectedStation = e.target.value;
+        let station = stations.filter(x => x.id == e.target.value)[0]
+        let text = station.name;
+        if (station.note) {
+            text += ` (${station.note})`;
+        }
+        selectedStationText.innerText = text;
+        document.getElementById("lineAndStopConfiguration").style.display = "block";
+        document.getElementById("additionalLinesConfiguration").style.display = "block";
+        generateConfigString();
+
+        fetch(`/departures?site_id=${selectedStation}`)
+            .then(response => response.json())
+            .then(data => {
+                departures = { "departures": data.departures, "stop_deviations": data.stop_deviations };
+                regererateDeparturesTable();
+            });
+    }
+
+    function filterStations() {
+        const input = document.getElementById('searchInput').value.toLowerCase();
+        const selectElement = document.getElementById('station');
+        const options = selectElement.getElementsByTagName('option');
+
+        for (let i = 0; i < options.length; i++) {
+            const optionText = options[i].text.toLowerCase();
+            if (optionText.toLocaleLowerCase().includes(input)) {
+                options[i].style.display = '';
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+    }
+
+    function copyCode(elementId) {
+        const code = document.getElementById(elementId).textContent;
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = code;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+
+        const copiedMessage = document.getElementById('codeCopied');
+        copiedMessage.classList.add('show');
+
+        setTimeout(() => {
+            copiedMessage.classList.remove('show');
+        }, 1000);
+    }
+
+    function generateConfigString() {
+        if (!selectedStation) {
+            document.getElementById("configCode").textContent = "<config incomplete - select station and lines>";
+            return;
         }
 
-        function filterStations() {
-            const input = document.getElementById('searchInput').value.toLowerCase();
-            const selectElement = document.getElementById('station');
-            const options = selectElement.getElementsByTagName('option');
+        const configParts = [];
+        document.getElementById("forecast").value ? configParts.push(document.getElementById("forecast").value) : configParts.push("120");
+        configParts.push(selectedStation.toString());
 
-            for (let i = 0; i < options.length; i++) {
-                const optionText = options[i].text.toLowerCase();
-                if (optionText.toLocaleLowerCase().includes(input)) {
-                    options[i].style.display = '';
-                } else {
-                    options[i].style.display = 'none';
-                }
+        document.getElementById("includeDeviations").checked ? configParts.push("true") : configParts.push("false");
+
+        document.getElementById("maxSecondRow").value ? configParts.push(document.getElementById("maxSecondRow").value) : configParts.push("3");
+
+        for (let i = 0; i < departures.departures.length; i++) {
+            let includeCheckbox = document.getElementById(`includeLine${i}`);
+            if (!includeCheckbox || !includeCheckbox.checked) {
+                continue;
+            }
+
+            let limitDirection = document.getElementById(`includeLineDirection${i}`).checked;
+
+            const departure = departures.departures[i];
+
+            let part = `${departure.line.id}`;
+
+            if (limitDirection) {
+                part += `:${departure.direction_code}`;
+            }
+
+            if (configParts.indexOf(part) == -1) {
+                configParts.push(part);
             }
         }
 
-        function copyCode(elementId) {
-            const code = document.getElementById(elementId).textContent;
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = code;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextArea);
-
-            const copiedMessage = document.getElementById('codeCopied');
-            copiedMessage.classList.add('show');
-
-            setTimeout(() => {
-                copiedMessage.classList.remove('show');
-            }, 1000);
-        }
-
-        function generateConfigString() {
-            if (!selectedStation) {
-                document.getElementById("configCode").textContent = "<config incomplete - select station and lines>";
-                return;
-            }
-
-            const configParts = [];
-            document.getElementById("forecast").value ? configParts.push(document.getElementById("forecast").value) : configParts.push("120");
-            configParts.push(selectedStation.toString());
-
-            document.getElementById("includeDeviations").checked ? configParts.push("true") : configParts.push("false");
-
-            document.getElementById("maxSecondRow").value ? configParts.push(document.getElementById("maxSecondRow").value) : configParts.push("3");
-
-            for (let i = 0; i < departures.departures.length; i++) {
-                let includeCheckbox = document.getElementById(`includeLine${i}`);
-                if (!includeCheckbox || !includeCheckbox.checked) {
-                    continue;
-                }
-
-                let limitDirection = document.getElementById(`includeLineDirection${i}`).checked;
-
-                const departure = departures.departures[i];
-
-                let part = `${departure.line.id}`;
-
-                if (limitDirection) {
-                    part += `:${departure.direction_code}`;
-                }
-
-                if (configParts.indexOf(part) == -1) {
-                    configParts.push(part);
-                }
-            }
-
-            for (let type in lines) {
-                for (let line of lines[type]) {
-                    checkbox = document.getElementById(`additionalIncludeLine${line.id}`);
-                    if (checkbox && checkbox.checked) {
-                        if (configParts.indexOf(line.id) == -1) {
-                            configParts.push(line.id);
-                        }
+        for (let type in lines) {
+            for (let line of lines[type]) {
+                checkbox = document.getElementById(`additionalIncludeLine${line.id}`);
+                if (checkbox && checkbox.checked) {
+                    if (configParts.indexOf(line.id) == -1) {
+                        configParts.push(line.id);
                     }
                 }
             }
-
-            let configString = configParts.join(";");
-
-            document.getElementById("configCode").textContent = configString;
         }
 
-        function regererateDeparturesTable() {
-            const table = document.getElementById("departuresTable");
-            table.innerHTML = "<tr> <th>Line</th> <th>Destination</th> <th>Include Line</th> <th>Limit To This Direction</th> </tr>";
+        let configString = configParts.join(";");
 
-            const seen = [];
-            for (let i = 0; i < departures.departures.length; i++) {
-                const departure = departures.departures[i];
-                if (seen.indexOf(`${departure.line.id} ${departure.direction_code} ${departure.destination}`) != -1) {
-                    continue;
-                }
+        document.getElementById("configCode").textContent = configString;
+    }
+
+    function regererateDeparturesTable() {
+        const table = document.getElementById("departuresTable");
+        table.innerHTML = "<tr> <th>Line</th> <th>Destination</th> <th>Include Line</th> <th>Limit To This Direction</th> </tr>";
+
+        const seen = [];
+        for (let i = 0; i < departures.departures.length; i++) {
+            const departure = departures.departures[i];
+            if (seen.indexOf(`${departure.line.id} ${departure.direction_code} ${departure.destination}`) != -1) {
+                continue;
+            }
+            const row = document.createElement("tr");
+            const line = getLine(departure.line.id);
+            row.innerHTML = `
+            <td>${line.designation}</td>
+            <td>${departure.destination}</td>
+            <td><input id="includeLine${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>
+            <td><input id="includeLineDirection${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>`;
+            table.appendChild(row);
+            seen.push(`${departure.line.id} ${departure.direction_code} ${departure.destination}`);
+        }
+
+        regerateAdditionalLinesTable();
+
+        generateConfigString();
+    }
+
+    function regerateAdditionalLinesTable() {
+        const additionalLinesTable = document.getElementById("additionalLinesTable");
+        additionalLinesTable.innerHTML = "<tr> <th>Type</th> <th>Line</th> <th>Group</th> <th>Include Line</th> </tr>";
+        for (let type in lines) {
+            for (let line of lines[type]) {
                 const row = document.createElement("tr");
-                const line = getLine(departure.line.id);
                 row.innerHTML = `
+                <td>${line.transport_mode}</td>
                 <td>${line.designation}</td>
-                <td>${departure.destination}</td>
-                <td><input id="includeLine${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>
-                <td><input id="includeLineDirection${i}" type="checkbox" name="includeLine" onchange="generateConfigString()" /></td>`;
-                table.appendChild(row);
-                seen.push(`${departure.line.id} ${departure.direction_code} ${departure.destination}`);
+                <td>${line.group_of_lines ?? ""}</td>
+                <td><input id="additionalIncludeLine${line.id}" type="checkbox" name="includeLine" onchange="generateConfigString();" /></td>`;
+                additionalLinesTable.appendChild(row);
             }
-
-            regerateAdditionalLinesTable();
-
-            generateConfigString();
         }
+    }
 
-        function regerateAdditionalLinesTable() {
-            const additionalLinesTable = document.getElementById("additionalLinesTable");
-            additionalLinesTable.innerHTML = "<tr> <th>Type</th> <th>Line</th> <th>Group</th> <th>Include Line</th> </tr>";
-            for (let type in lines) {
-                for (let line of lines[type]) {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                    <td>${line.transport_mode}</td>
-                    <td>${line.designation}</td>
-                    <td>${line.group_of_lines ?? ""}</td>
-                    <td><input id="additionalIncludeLine${line.id}" type="checkbox" name="includeLine" onchange="generateConfigString();" /></td>`;
-                    additionalLinesTable.appendChild(row);
+    function getLine(lineId) {
+        for (let type in lines) {
+            for (let line of lines[type]) {
+                if (line.id === lineId) {
+                    return line;
                 }
             }
         }
+        return null;
+    }
 
-        function getLine(lineId) {
-            for (let type in lines) {
-                for (let line of lines[type]) {
-                    if (line.id === lineId) {
-                        return line;
-                    }
-                }
-            }
-            return null;
+    //Knapp för att öppna display
+    document.getElementById("configLink").addEventListener("click", function(event) {
+        // Se till att configCode är genererad
+        generateConfigString();
+
+        // Hämta configCode från DOM
+        const configCode = document.getElementById("configCode").textContent;
+
+        // Kontrollera att configCode inte är ofullständig
+        if (configCode.includes("incomplete")) {
+            alert("Config är ofullständig! Välj station och linjer först.");
+            event.preventDefault(); // Hindra länken från att öppnas
+            return;
         }
-    </script>
 
-    <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-}
+        // Uppdatera href-attributet med den nya URL:en
+        const url = `./display?config=${encodeURIComponent(configCode)}`;
+        document.getElementById("configLink").setAttribute("href", url);
+    });
+
+</script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
 
     .holder {
         margin: 20px;
@@ -381,5 +405,18 @@ body {
     .notransition {
         transition: none !important;
     }
-    </style>
+
+    .button {
+        color: #000;
+        background-color: #d9d9d9;
+        padding: 10px;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .button:hover {
+        background-color: #a3a3a3;
+    }
+</style>
 </html>

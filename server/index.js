@@ -166,6 +166,9 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
         });
 
         if (filteredDepartures.length > 0) {
+            if (filteredDepartures[0].line.transport_mode == "TRAIN") {
+                text += `${filteredDepartures[0].stop_point.designation} `;
+            }
             text += `${filteredDepartures[0].line.designation} ${filteredDepartures[0].destination}$${filteredDepartures[0].display}\n`;
 
             if (filteredDepartures[0].deviations) {
@@ -178,6 +181,9 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
         let sr = filteredDepartures.length - 1 > maxSecondRow && maxSecondRow >= 0 ? maxSecondRow + 1 : filteredDepartures.length;
         for (let i = 1; i < sr; i++) {
             const departure = filteredDepartures[i];
+            if (departure.line.transport_mode == "TRAIN") {
+                text += `${departure.stop_point.designation} `;
+            }
             text += `${departure.line.designation} ${departure.destination}$${departure.display};`;
         }
 
