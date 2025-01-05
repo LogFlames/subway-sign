@@ -182,9 +182,9 @@ async function get_and_update_cache(query, siteId, forecast, maxSecondRow, inclu
         });
 
         if (filteredDepartures.length > 0) {
-            if (filteredDepartures[0].line.transport_mode == "TRAIN") {
-                text += `${filteredDepartures[0].stop_point.designation} `;
-            }
+            //if (filteredDepartures[0].line.transport_mode == "TRAIN") {
+            //    text += `${filteredDepartures[0].stop_point.designation} `;
+            //}
             text += `${filteredDepartures[0].line.designation} ${filteredDepartures[0].destination}$${filteredDepartures[0].display}\n`;
 
             if (filteredDepartures[0].deviations) {
