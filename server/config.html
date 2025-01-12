@@ -42,6 +42,8 @@
         <hint>Includes information such as short trains, broken elevators, etc.</hint>
         <div style="height: 20px;"></div>
         <p>NOTE! Make sure all lines of a certain type are unchecked if you wish to exclude it.</p>
+        <button id="includeAllDeparturesTable" onclick="includeAllDepartures()">Include all lines</button>
+        <button id="excludeAllDeparturesTable" onclick="excludeAllDepartures()">Exclude all lines</button>
         <table id="departuresTable">
         </table>
     </div>
@@ -237,6 +239,30 @@
             }
         }
         return null;
+    }
+
+    function excludeAllDepartures() {
+        for (let i = 0; i < departures.departures.length; i++) {
+            let includeCheckbox = document.getElementById(`includeLine${i}`);
+            if (!includeCheckbox) {
+                continue;
+            }
+
+            includeCheckbox.checked = false;
+        }
+        generateConfigString();
+    }
+
+    function includeAllDepartures() {
+        for (let i = 0; i < departures.departures.length; i++) {
+            let includeCheckbox = document.getElementById(`includeLine${i}`);
+            if (!includeCheckbox) {
+                continue;
+            }
+
+            includeCheckbox.checked = true;
+        }
+        generateConfigString();
     }
 
     //Knapp för att öppna display
