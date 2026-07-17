@@ -9,6 +9,7 @@
     <div class="container">
         <header class="board-header">
             <div class="flex-item-1">
+                <a class="logo-link" href="/" aria-label="Till inställningarna"><img src="/assets/sl-logo.svg" alt="SL"></a>
                 <a href="https://t-skylten.vkronmar.net"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0, 0, 61, 48" style="width: auto; height: 90px;"><title>SL</title><path d="M30.3 41.703a23.845 23.845 0 0 0 16.972-7.03 23.845 23.845 0 0 0 7.03-16.972v-.493h-2.815v.493c0 5.66-2.204 10.98-6.205 14.982A21.049 21.049 0 0 1 30.3 38.888c-5.66 0-10.98-2.203-14.982-6.205A21.048 21.048 0 0 1 9.113 17.7v-.493H6.298v.493a23.844 23.844 0 0 0 7.03 16.972 23.845 23.845 0 0 0 16.972 7.03zm0-38.888c8.208 0 14.886 6.678 14.886 14.886 0 8.209-6.678 14.887-14.886 14.887-8.208 0-14.887-6.678-14.887-14.887 0-8.208 6.679-14.886 14.887-14.886zm0 32.588c4.728 0 9.173-1.842 12.517-5.185A17.586 17.586 0 0 0 48 17.701c0-4.728-1.84-9.173-5.184-12.516A17.586 17.586 0 0 0 30.3 0a17.586 17.586 0 0 0-12.517 5.185A17.586 17.586 0 0 0 12.6 17.7c0 4.729 1.84 9.174 5.184 12.517A17.586 17.586 0 0 0 30.3 35.403zm27.485-18.195v.493c0 7.342-2.859 14.244-8.05 19.435-5.191 5.191-12.094 8.05-19.435 8.05-7.341 0-14.244-2.859-19.435-8.05-5.191-5.191-8.05-12.093-8.05-19.435v-.493H0v.493c0 4.09.801 8.058 2.382 11.795a30.197 30.197 0 0 0 6.493 9.63A30.2 30.2 0 0 0 30.3 48.002a30.2 30.2 0 0 0 21.425-8.875 30.199 30.199 0 0 0 6.493-9.63A30.113 30.113 0 0 0 60.6 17.7v-.493h-2.815zm-17.02 4.213H35.53v-11.22h-3.032v13.926h8.267v-2.706zm-15.191.247c-2.36 0-3.993-1.543-3.993-1.543l-1.686 2.074s2.178 2.12 5.621 2.12c3.07 0 5.055-1.686 5.055-4.294 0-2.732-2.168-3.636-4.511-4.205-2.718-.65-2.85-1.101-2.85-1.843 0-.812.686-1.316 1.791-1.316 1.732 0 3.085 1.013 3.085 1.013l1.707-2.104s-1.748-1.558-4.754-1.558c-2.837 0-4.744 1.678-4.744 4.175 0 2.64 1.71 3.57 4.664 4.284 2.696.623 2.696 1.162 2.696 1.785 0 .87-.798 1.412-2.081 1.412z" fill="white" fill-rule="evenodd"></path></svg></a>
             </div>
             <div class="flex-item-2 station-heading">
@@ -16,6 +17,11 @@
                 <h1 id="stationTitle">T-Skylten</h1>
             </div>
             <time class="flex-item-3 clock" id="clock" aria-label="Aktuell tid"></time>
+            <button class="fullscreen-button" id="fullscreenButton" type="button" aria-label="Visa i fullskärm" title="Visa i fullskärm">
+                <svg class="fullscreen-icon fullscreen-enter" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+                <svg class="fullscreen-icon fullscreen-exit" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>
+                <span id="fullscreenLabel">Fullskärm</span>
+            </button>
         </header>
         <div class="table-wrap">
             <table id="stations" aria-label="Kommande avgångar"></table>
@@ -86,19 +92,20 @@
 
                         // Skapa linje-cellen och sätt färg
                         const lineTd = document.createElement("td");
-                        lineTd.innerText = departure.line;
                         lineTd.className = "line";
+                        const lineBadge = document.createElement("span");
+                        lineBadge.className = "line-badge";
+                        lineBadge.innerText = departure.line;
 
                         const lineNumber = parseInt(departure.line, 10); // Konvertera till nummer
                         if (!isNaN(lineNumber)) {
                             const color = getLineColor(lineNumber); // Hämta färg
                             if (color) {
-                                lineTd.style.backgroundColor = color; // Ställ in bakgrundsfärg
-                                lineTd.style.color = "white"; // Gör texten synlig
-                                lineTd.style.fontWeight = "bold"; // För bättre läsbarhet
+                                lineBadge.style.backgroundColor = color; // Ställ in bakgrundsfärg
                             }
                         }
 
+                        lineTd.appendChild(lineBadge);
                         tr.appendChild(lineTd);
 
                         // Skapa destination- och tid-celler
@@ -157,7 +164,12 @@
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+        const time = `${hours}:${minutes}:${seconds}`;
+        clockElement.setAttribute("datetime", time);
+        clockElement.setAttribute("aria-label", `Aktuell tid ${time}`);
+        clockElement.innerHTML = [...time].map(character =>
+            `<span class="${character === ":" ? "clock-separator" : "clock-digit"}" aria-hidden="true">${character}</span>`
+        ).join("");
     }
 
     // Uppdatera klockan varje sekund
@@ -165,6 +177,45 @@
 
     // Starta klockan direkt när sidan laddas
     updateClock();
+
+    const fullscreenButton = document.getElementById("fullscreenButton");
+    const fullscreenLabel = document.getElementById("fullscreenLabel");
+
+    function getFullscreenElement() {
+        return document.fullscreenElement || document.webkitFullscreenElement;
+    }
+
+    function syncFullscreenButton() {
+        const isFullscreen = Boolean(getFullscreenElement());
+        document.body.classList.toggle("is-fullscreen", isFullscreen);
+        fullscreenButton.setAttribute("aria-label", isFullscreen ? "Avsluta fullskärm" : "Visa i fullskärm");
+        fullscreenButton.title = isFullscreen ? "Avsluta fullskärm" : "Visa i fullskärm";
+        fullscreenLabel.textContent = isFullscreen ? "Avsluta" : "Fullskärm";
+    }
+
+    async function toggleFullscreen() {
+        try {
+            if (getFullscreenElement()) {
+                const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+                await exitFullscreen.call(document);
+            } else {
+                const requestFullscreen = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+                await requestFullscreen.call(document.documentElement);
+            }
+        } catch (error) {
+            console.error("Unable to toggle fullscreen", error);
+        }
+    }
+
+    const fullscreenSupported = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (fullscreenSupported) {
+        fullscreenButton.addEventListener("click", toggleFullscreen);
+        document.addEventListener("fullscreenchange", syncFullscreenButton);
+        document.addEventListener("webkitfullscreenchange", syncFullscreenButton);
+        syncFullscreenButton();
+    } else {
+        fullscreenButton.hidden = true;
+    }
 
     if (siteId) {
         fetch("/station?site_id=" + encodeURIComponent(siteId)).then(response => response.json()).then(station => {
@@ -346,8 +397,8 @@
 
     body {
         margin: 0;
-        padding: clamp(16px, 3vw, 48px);
-        background: var(--sl-black);
+        padding: 0 clamp(12px, 2vw, 32px);
+        background: var(--board);
         color: #fff;
         font-family: "SL Gothic", Arial, sans-serif;
         font-size: 24px;
@@ -362,19 +413,19 @@
     }
 
     .container {
-        width: min(1500px, 100%);
-        min-height: calc(100vh - clamp(32px, 6vw, 96px));
-        margin: 0 auto;
-        padding: clamp(24px, 4vw, 60px);
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        padding: clamp(28px, 4vw, 64px);
         overflow: hidden;
-        border: 1px solid #2c3036;
-        border-radius: 8px;
+        border: 0;
+        border-radius: 0;
         background: var(--board);
     }
 
     .board-header {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
         align-items: center;
         gap: clamp(20px, 3vw, 44px);
         padding-bottom: clamp(24px, 3vw, 42px);
@@ -399,10 +450,9 @@
         color: #fff;
     }
 
-    .flex-item-1 svg {
-        width: 66px !important;
-        height: auto !important;
-    }
+    .flex-item-1 > a:not(.logo-link) { display: none; }
+
+    .flex-item-1 .logo-link img { width: 66px; height: auto; }
 
     .station-heading { min-width: 0; }
 
@@ -427,6 +477,10 @@
     }
 
     .clock {
+        display: grid;
+        grid-template-columns: repeat(2, .68em) .34em repeat(2, .68em) .34em repeat(2, .68em);
+        width: 4.76em;
+        min-width: 4.76em;
         color: #fff;
         font-family: "SL Gothic Display", "SL Gothic", sans-serif;
         font-size: clamp(32px, 4.5vw, 64px);
@@ -436,6 +490,57 @@
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
+
+    .clock-digit,
+    .clock-separator {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .fullscreen-button {
+        display: inline-flex;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: #fff;
+        font: 700 17px/1 "SL Gothic", sans-serif;
+        opacity: .42;
+        cursor: pointer;
+        transition: opacity .15s ease, border-color .15s ease, background-color .15s ease;
+    }
+
+    .fullscreen-button:hover,
+    .fullscreen-button:focus-visible {
+        border-color: #626973;
+        background: #1c2026;
+        opacity: 1;
+    }
+
+    .fullscreen-button:focus-visible {
+        outline: 3px solid var(--sl-blue);
+        outline-offset: 3px;
+    }
+
+    .fullscreen-icon {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: square;
+        stroke-linejoin: miter;
+        stroke-width: 2;
+    }
+
+    .fullscreen-exit { display: none; }
+    .is-fullscreen .fullscreen-enter { display: none; }
+    .is-fullscreen .fullscreen-exit { display: block; }
+    .fullscreen-button span { display: none; }
 
     .table-wrap { overflow-x: auto; }
 
@@ -469,21 +574,33 @@
     }
 
     #stations .line {
-        width: 112px;
+        width: calc(clamp(54px, 5vw, 76px) + 20px);
+        min-width: calc(clamp(54px, 5vw, 76px) + 20px);
         padding: 0 20px 0 0;
         border-radius: 0;
         text-align: left;
     }
 
     #stations td.line {
-        width: 76px;
-        height: 56px;
-        padding: 0 14px;
-        border: 10px solid var(--board);
-        border-radius: 18px;
-        font-weight: 700 !important;
-        text-align: center;
-        background-clip: padding-box;
+        height: clamp(74px, 8vw, 110px);
+        padding: 0 20px 0 0;
+        border-radius: 0;
+        text-align: left;
+    }
+
+    .line-badge {
+        display: inline-grid;
+        width: clamp(54px, 5vw, 76px);
+        height: clamp(54px, 5vw, 76px);
+        aspect-ratio: 1;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 8px;
+        background: #73777d;
+        color: #fff;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
     }
 
     #stations .destination {
@@ -545,13 +662,14 @@
     }
 
     @media (max-width: 720px) {
-        body { padding: 8px; }
+        body { padding: 0 8px; }
         body::before { height: 4px; }
-        .container { min-height: calc(100vh - 16px); padding: 20px 16px; }
+        .container { min-height: 100vh; padding: 20px 16px; }
         .board-header { grid-template-columns: auto minmax(0, 1fr); gap: 16px; }
         .flex-item-1 a { width: 64px; height: 64px; }
-        .flex-item-1 svg { width: 46px !important; }
-        .clock { grid-column: 1 / -1; padding-top: 16px; border-top: 1px solid var(--board-line); }
+        .flex-item-1 .logo-link img { width: 46px; }
+        .clock { grid-column: 1 / 2; padding-top: 16px; border-top: 1px solid var(--board-line); }
+        .fullscreen-button { grid-column: 2 / 3; margin-top: 16px; justify-self: end; }
         #stations { min-width: 620px; }
     }
 </style>
