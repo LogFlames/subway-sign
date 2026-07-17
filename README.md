@@ -38,6 +38,24 @@ docker build -t subway-sign ./server
 docker run --rm -p 8080:8080 subway-sign
 ```
 
+Published images are available from the GitHub Container Registry. For a
+TrueNAS custom app, use `ghcr.io/logflames/subway-sign` as the repository and a
+numbered release such as `1.1.0` as the tag. Pinning a numbered tag makes the
+running application version explicit and allows deliberate upgrades.
+
+Images built from `main` use the `main` tag. Pushing a Git tag in the form
+`vMAJOR.MINOR.PATCH` publishes the corresponding semantic-version tags plus
+`latest`. For example, `v1.2.3` publishes `1.2.3`, `1.2`, `1`, and `latest`:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The published images also contain standard OCI version, revision, source, and
+creation-time labels. TrueNAS custom apps display their own iX-App wrapper
+version separately; the Docker image tag is the Subway Sign release version.
+
 ## Configuration format
 
 The generated sign configuration is a semicolon-separated string:
