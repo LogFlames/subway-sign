@@ -28,7 +28,9 @@
 <script>
     const params = new URLSearchParams(window.location.search);
     const config = params.get("config");
-    const siteId = config.split(";")[1];
+    const showStopDesignation = params.get("showStop") === "true";
+    const siteId = config?.split(";")[1];
+    document.body.classList.toggle("show-stop", showStopDesignation);
 
     function getLineColor(lineNumber) {
         // Specifika linjenummer
@@ -62,76 +64,88 @@
     }
 
     update = () => {
-        fetch(`/text?config=${config}`).then(
-            res => res.text()).then(
-                text => {
-                    const parts = text.split("\n");
-                    let lines = [parts[0], ...parts[1].split(";")];
-                    lines = lines.filter(line => line.length > 0);
+        if (!config) {
+            return;
+        }
+
+        fetch(`/display-data?config=${encodeURIComponent(config)}`).then(
+            res => {
+                if (!res.ok) {
+                    throw new Error("Unable to load departures");
+                }
+                return res.json();
+            }).then(
+                data => {
                     document.getElementById("stations").innerHTML = "";
 
                     // Skapa tabellhuvudet
                     const headerTr = document.createElement("tr");
-                    headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th><th class='time header'>Time</th>`;
+                    headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th>${showStopDesignation ? "<th class='stop header'>Spår/läge</th>" : ""}<th class='time header'>Time</th>`;
                     document.getElementById("stations").appendChild(headerTr);
 
-                    for (let line of lines) {
-                        const lineCandidate = line.split(" ")[0];
-                        if (lineCandidate.match(/^[0-9]+[A-Za-z]?$/)) {
-                            const [destination, time] = line.slice(lineCandidate.length).split("$");
+                    for (const departure of data.departures) {
+                        const tr = document.createElement("tr");
 
-                            const tr = document.createElement("tr");
+                        // Skapa linje-cellen och sätt färg
+                        const lineTd = document.createElement("td");
+                        lineTd.innerText = departure.line;
+                        lineTd.className = "line";
 
-                            // Skapa linje-cellen och sätt färg
-                            const lineTd = document.createElement("td");
-                            lineTd.innerText = lineCandidate;
-                            lineTd.className = "line";
-
-                            const lineNumber = parseInt(lineCandidate.trim(), 10); // Konvertera till nummer
-                            if (!isNaN(lineNumber)) {
-                                const color = getLineColor(lineNumber); // Hämta färg
-                                if (color) {
-                                    lineTd.style.backgroundColor = color; // Ställ in bakgrundsfärg
-                                    lineTd.style.color = "white"; // Gör texten synlig
-                                    lineTd.style.fontWeight = "bold"; // För bättre läsbarhet
-                                }
+                        const lineNumber = parseInt(departure.line, 10); // Konvertera till nummer
+                        if (!isNaN(lineNumber)) {
+                            const color = getLineColor(lineNumber); // Hämta färg
+                            if (color) {
+                                lineTd.style.backgroundColor = color; // Ställ in bakgrundsfärg
+                                lineTd.style.color = "white"; // Gör texten synlig
+                                lineTd.style.fontWeight = "bold"; // För bättre läsbarhet
                             }
-
-                            tr.appendChild(lineTd);
-
-                            // Skapa destination- och tid-celler
-                            const destinationTd = document.createElement("td");
-                            destinationTd.innerText = destination;
-                            destinationTd.className = "destination";
-                            tr.appendChild(destinationTd);
-
-                            const timeTd = document.createElement("td");
-                            timeTd.innerText = time;
-                            timeTd.className = "time";
-                            tr.appendChild(timeTd);
-
-                            document.getElementById("stations").appendChild(tr);
-                        } else {
-                            // Om raden är information, skapa varningsikon och slå ihop de två kolumnerna
-                            const tr = document.createElement("tr");
-
-                            // Kolumn 1: Varningsikon
-                            const warningTd = document.createElement("td");
-                            warningTd.className = "warning";
-                            warningTd.innerHTML = "⚠️";
-                            tr.appendChild(warningTd);
-
-                            // Kolumn 2: Informationsmeddelande med colSpan="2"
-                            const infoTd = document.createElement("td");
-                            infoTd.className = "info";
-                            infoTd.colSpan = "2"; // Slår ihop kolumn 2 och 3
-                            infoTd.innerText = line;
-                            tr.appendChild(infoTd);
-
-                            document.getElementById("stations").appendChild(tr);
                         }
+
+                        tr.appendChild(lineTd);
+
+                        // Skapa destination- och tid-celler
+                        const destinationTd = document.createElement("td");
+                        destinationTd.innerText = departure.destination;
+                        destinationTd.className = "destination";
+                        tr.appendChild(destinationTd);
+
+                        if (showStopDesignation) {
+                            const stopTd = document.createElement("td");
+                            stopTd.innerText = departure.stopDesignation || "–";
+                            stopTd.className = "stop";
+                            tr.appendChild(stopTd);
+                        }
+
+                        const timeTd = document.createElement("td");
+                        timeTd.innerText = departure.display;
+                        timeTd.className = "time";
+                        tr.appendChild(timeTd);
+
+                        document.getElementById("stations").appendChild(tr);
                     }
-            })
+
+                    for (const message of data.deviations) {
+                        // Om raden är information, skapa varningsikon och slå ihop resterande kolumner
+                        const tr = document.createElement("tr");
+
+                        // Kolumn 1: Varningsikon
+                        const warningTd = document.createElement("td");
+                        warningTd.className = "warning";
+                        warningTd.innerHTML = "⚠️";
+                        tr.appendChild(warningTd);
+
+                        // Kolumn 2: Informationsmeddelande
+                        const infoTd = document.createElement("td");
+                        infoTd.className = "info";
+                        infoTd.colSpan = showStopDesignation ? "3" : "2";
+                        infoTd.innerText = message;
+                        tr.appendChild(infoTd);
+
+                        document.getElementById("stations").appendChild(tr);
+                    }
+            }).catch(error => {
+                console.error(error);
+            });
     }
 
     // Uppdatera tabellen med jämna mellanrum
@@ -154,9 +168,11 @@
     // Starta klockan direkt när sidan laddas
     updateClock();
 
-    fetch("/station?site_id=" + siteId).then(response => response.json()).then(station => {
-        document.getElementById("stationTitle").innerText = station.name;
-    });
+    if (siteId) {
+        fetch("/station?site_id=" + encodeURIComponent(siteId)).then(response => response.json()).then(station => {
+            document.getElementById("stationTitle").innerText = station.name;
+        });
+    }
 
 </script>
 
@@ -254,6 +270,16 @@
         text-align: left;
         width: 72%;
         padding-left: 3%;
+    }
+
+    .show-stop .destination {
+        width: 62%;
+    }
+
+    .stop {
+        text-align: left;
+        width: 12%;
+        white-space: nowrap;
     }
 
     .time {

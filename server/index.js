@@ -94,13 +94,69 @@ app.get('/departures', async (req, res) => {
     let line_id = req.query.line_id;
     let direction_code = req.query.direction_code;
 
-    let url = SL_DEPARTURES_URL(site_id, transport, line_id, direction_code);
+    let url = SL_DEPARTURES_URL(site_id, 1200, transport, line_id, direction_code);
     try {
         let departures = await (await fetch(url)).json();
         return res.json(departures);
     } catch (e) {
         console.error(e);
         return res.json({});
+    }
+});
+
+app.get('/display-data', async (req, res) => {
+    if (!req.query.config) {
+        return res.status(400).json({ error: "No config specified" });
+    }
+
+    const parts = req.query.config.split(";");
+    if (parts.length < 4) {
+        return res.status(400).json({ error: "Invalid config" });
+    }
+
+    const forecast = parts[0];
+    const siteId = parts[1];
+    const includeDeviations = parts[2] === "true";
+    const maxSecondRow = parseInt(parts[3], 10);
+    const includeLines = new Set(parts.slice(4));
+
+    try {
+        const result = await fetch(SL_DEPARTURES_URL(siteId, forecast));
+        if (!result.ok) {
+            console.error(await result.text());
+            return res.status(502).json({ error: "Unable to query SL" });
+        }
+
+        const data = await result.json();
+        const filteredDepartures = (data.departures || []).filter(departure =>
+            includeLines.has(`${departure.line.id}`) ||
+            includeLines.has(`${departure.line.id}:${departure.direction_code}`)
+        );
+        const numberOfDepartures = maxSecondRow >= 0
+            ? Math.min(filteredDepartures.length, maxSecondRow + 1)
+            : filteredDepartures.length;
+        const visibleDepartures = filteredDepartures.slice(0, numberOfDepartures);
+
+        const deviations = [];
+        if (visibleDepartures[0]?.deviations) {
+            visibleDepartures[0].deviations.forEach(deviation => deviations.push(deviation.message));
+        }
+        if (includeDeviations) {
+            (data.stop_deviations || []).forEach(deviation => deviations.push(deviation.message));
+        }
+
+        return res.json({
+            departures: visibleDepartures.map(departure => ({
+                line: departure.line.designation,
+                destination: departure.destination,
+                display: departure.display,
+                stopDesignation: departure.stop_point?.designation || ""
+            })),
+            deviations
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(502).json({ error: "Unable to query SL" });
     }
 });
 
@@ -223,5 +279,4 @@ const IP = "0.0.0.0";
 app.listen(PORT, IP, () => {
     console.log(`Server is running on http://${IP}:${PORT}`);
 });
-
 

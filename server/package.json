@@ -1,6 +1,6 @@
 {
   "name": "subway-sign-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -15,7 +15,7 @@
     "url": "https://github.com/logflames/subway-sign/issues"
   },
   "homepage": "https://github.com/logflames/subway-sign#readme",
-  "description": "",
+  "description": "SL departure display server for the T-Skylten web and ESP8266 signs",
   "dependencies": {
     "body-parser": "^1.20.3",
     "express": "^4.20.0"
