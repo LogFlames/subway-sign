@@ -36,6 +36,7 @@ const dirname = path.dirname(__filename);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/assets', express.static(path.join(dirname, 'assets')));
 
 setInterval(() => {
     for (req in requests) {
@@ -279,4 +280,3 @@ const IP = "0.0.0.0";
 app.listen(PORT, IP, () => {
     console.log(`Server is running on http://${IP}:${PORT}`);
 });
-

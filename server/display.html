@@ -1,27 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Subway Sign</title> 
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&family=Sawarabi+Gothic&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Avgångstavla – T-Skylten</title>
 </head>
 <body>
     <div class="container">
-        <div class="flex">
+        <header class="board-header">
             <div class="flex-item-1">
                 <a href="https://t-skylten.vkronmar.net"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0, 0, 61, 48" style="width: auto; height: 90px;"><title>SL</title><path d="M30.3 41.703a23.845 23.845 0 0 0 16.972-7.03 23.845 23.845 0 0 0 7.03-16.972v-.493h-2.815v.493c0 5.66-2.204 10.98-6.205 14.982A21.049 21.049 0 0 1 30.3 38.888c-5.66 0-10.98-2.203-14.982-6.205A21.048 21.048 0 0 1 9.113 17.7v-.493H6.298v.493a23.844 23.844 0 0 0 7.03 16.972 23.845 23.845 0 0 0 16.972 7.03zm0-38.888c8.208 0 14.886 6.678 14.886 14.886 0 8.209-6.678 14.887-14.886 14.887-8.208 0-14.887-6.678-14.887-14.887 0-8.208 6.679-14.886 14.887-14.886zm0 32.588c4.728 0 9.173-1.842 12.517-5.185A17.586 17.586 0 0 0 48 17.701c0-4.728-1.84-9.173-5.184-12.516A17.586 17.586 0 0 0 30.3 0a17.586 17.586 0 0 0-12.517 5.185A17.586 17.586 0 0 0 12.6 17.7c0 4.729 1.84 9.174 5.184 12.517A17.586 17.586 0 0 0 30.3 35.403zm27.485-18.195v.493c0 7.342-2.859 14.244-8.05 19.435-5.191 5.191-12.094 8.05-19.435 8.05-7.341 0-14.244-2.859-19.435-8.05-5.191-5.191-8.05-12.093-8.05-19.435v-.493H0v.493c0 4.09.801 8.058 2.382 11.795a30.197 30.197 0 0 0 6.493 9.63A30.2 30.2 0 0 0 30.3 48.002a30.2 30.2 0 0 0 21.425-8.875 30.199 30.199 0 0 0 6.493-9.63A30.113 30.113 0 0 0 60.6 17.7v-.493h-2.815zm-17.02 4.213H35.53v-11.22h-3.032v13.926h8.267v-2.706zm-15.191.247c-2.36 0-3.993-1.543-3.993-1.543l-1.686 2.074s2.178 2.12 5.621 2.12c3.07 0 5.055-1.686 5.055-4.294 0-2.732-2.168-3.636-4.511-4.205-2.718-.65-2.85-1.101-2.85-1.843 0-.812.686-1.316 1.791-1.316 1.732 0 3.085 1.013 3.085 1.013l1.707-2.104s-1.748-1.558-4.754-1.558c-2.837 0-4.744 1.678-4.744 4.175 0 2.64 1.71 3.57 4.664 4.284 2.696.623 2.696 1.162 2.696 1.785 0 .87-.798 1.412-2.081 1.412z" fill="white" fill-rule="evenodd"></path></svg></a>
             </div>
-            <div class="flex-item-2">
+            <div class="flex-item-2 station-heading">
+                <span class="eyebrow">Avgångar från</span>
                 <h1 id="stationTitle">T-Skylten</h1>
             </div>
-            <div class="flex-item-3 clock" id="clock">
-                <p>Test 2</p>
-            </div>
+            <time class="flex-item-3 clock" id="clock" aria-label="Aktuell tid"></time>
+        </header>
+        <div class="table-wrap">
+            <table id="stations" aria-label="Kommande avgångar"></table>
         </div>
-        <table id="stations"> </table>
     </div>
 </body>
 
@@ -80,7 +78,7 @@
 
                     // Skapa tabellhuvudet
                     const headerTr = document.createElement("tr");
-                    headerTr.innerHTML = `<th class='line header'>Line</th><th class='destination header'>Destination</th>${showStopDesignation ? "<th class='stop header'>Spår/läge</th>" : ""}<th class='time header'>Time</th>`;
+                    headerTr.innerHTML = `<th class='line header'>Linje</th><th class='destination header'>Mot</th>${showStopDesignation ? "<th class='stop header'>Spår/läge</th>" : ""}<th class='time header'>Avgår</th>`;
                     document.getElementById("stations").appendChild(headerTr);
 
                     for (const departure of data.departures) {
@@ -131,7 +129,7 @@
                         // Kolumn 1: Varningsikon
                         const warningTd = document.createElement("td");
                         warningTd.className = "warning";
-                        warningTd.innerHTML = "⚠️";
+                        warningTd.innerHTML = "<span aria-hidden='true'>!</span><span class='sr-only'>Trafikinformation</span>";
                         tr.appendChild(warningTd);
 
                         // Kolumn 2: Informationsmeddelande
@@ -305,6 +303,256 @@
         padding-left: 3%;
         font-size: 1rem;
         text-align: left;
+    }
+</style>
+<style>
+    @font-face {
+        font-family: "SL Gothic";
+        src: url("/assets/fonts/slgothictext2-regular.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: "SL Gothic";
+        src: url("/assets/fonts/slgothictext2-bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: "SL Gothic Display";
+        src: url("/assets/fonts/slgothicdisplay-bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+    }
+
+    :root {
+        color-scheme: dark;
+        --sl-blue: #2870f0;
+        --sl-black: #12151a;
+        --board: #050607;
+        --board-line: #3a3f47;
+        --board-muted: #bdc3cb;
+        --warning: #c8783a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+        margin: 0;
+        padding: clamp(16px, 3vw, 48px);
+        background: var(--sl-black);
+        color: #fff;
+        font-family: "SL Gothic", Arial, sans-serif;
+        font-size: 24px;
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0 0 auto;
+        height: 8px;
+        background: var(--sl-blue);
+    }
+
+    .container {
+        width: min(1500px, 100%);
+        min-height: calc(100vh - clamp(32px, 6vw, 96px));
+        margin: 0 auto;
+        padding: clamp(24px, 4vw, 60px);
+        overflow: hidden;
+        border: 1px solid #2c3036;
+        border-radius: 8px;
+        background: var(--board);
+    }
+
+    .board-header {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: clamp(20px, 3vw, 44px);
+        padding-bottom: clamp(24px, 3vw, 42px);
+        border-bottom: 1px solid var(--board-line);
+    }
+
+    .flex-item-1,
+    .flex-item-2,
+    .flex-item-3 {
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+
+    .flex-item-1 a {
+        display: grid;
+        width: 96px;
+        height: 96px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--sl-blue);
+        color: #fff;
+    }
+
+    .flex-item-1 svg {
+        width: 66px !important;
+        height: auto !important;
+    }
+
+    .station-heading { min-width: 0; }
+
+    .eyebrow {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--board-muted);
+        font-size: clamp(16px, 1.5vw, 22px);
+        line-height: 1.2;
+    }
+
+    h1 {
+        overflow: hidden;
+        margin: 0;
+        color: #fff;
+        font-family: "SL Gothic Display", "SL Gothic", sans-serif;
+        font-size: clamp(36px, 5vw, 72px);
+        font-weight: 700;
+        line-height: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .clock {
+        color: #fff;
+        font-family: "SL Gothic Display", "SL Gothic", sans-serif;
+        font-size: clamp(32px, 4.5vw, 64px);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: .02em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    #stations {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        color: #fff;
+        font-size: clamp(22px, 2.7vw, 38px);
+        vertical-align: middle;
+    }
+
+    #stations th,
+    #stations td {
+        border-bottom: 1px solid var(--board-line);
+    }
+
+    #stations td {
+        height: clamp(74px, 8vw, 110px);
+        font-size: inherit !important;
+    }
+
+    #stations .header {
+        height: 62px;
+        border-bottom: 1px solid var(--board-line) !important;
+        color: var(--board-muted);
+        font-size: clamp(16px, 1.5vw, 22px);
+        font-weight: 400 !important;
+        letter-spacing: .01em;
+        text-align: left;
+    }
+
+    #stations .line {
+        width: 112px;
+        padding: 0 20px 0 0;
+        border-radius: 0;
+        text-align: left;
+    }
+
+    #stations td.line {
+        width: 76px;
+        height: 56px;
+        padding: 0 14px;
+        border: 10px solid var(--board);
+        border-radius: 18px;
+        font-weight: 700 !important;
+        text-align: center;
+        background-clip: padding-box;
+    }
+
+    #stations .destination {
+        width: auto;
+        padding: 0 28px 0 0;
+        text-align: left;
+    }
+
+    #stations .stop {
+        width: 16%;
+        padding-right: 24px;
+        color: #edf0f3;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    #stations .time {
+        width: 20%;
+        color: #fff;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    #stations .warning {
+        width: 76px;
+        padding-right: 14px;
+        color: var(--warning);
+        font-size: 28px !important;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    #stations .warning > span:first-child {
+        display: inline-grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 3px solid currentColor;
+        border-radius: 50%;
+    }
+
+    #stations .info {
+        padding: 18px 0;
+        color: #f0d2bb;
+        font-size: clamp(16px, 1.5vw, 21px);
+        line-height: 1.35;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    @media (max-width: 720px) {
+        body { padding: 8px; }
+        body::before { height: 4px; }
+        .container { min-height: calc(100vh - 16px); padding: 20px 16px; }
+        .board-header { grid-template-columns: auto minmax(0, 1fr); gap: 16px; }
+        .flex-item-1 a { width: 64px; height: 64px; }
+        .flex-item-1 svg { width: 46px !important; }
+        .clock { grid-column: 1 / -1; padding-top: 16px; border-top: 1px solid var(--board-line); }
+        #stations { min-width: 620px; }
     }
 </style>
 </html>
