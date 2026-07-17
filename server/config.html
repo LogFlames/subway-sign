@@ -17,6 +17,11 @@
         <div>
             <a id="configLink" href="#" target="_blank" class="button">Öppna display</a>
         </div>
+        <div class="web-display-options">
+            <label for="showStopDesignation">Visa spår/läge:</label>
+            <input type="checkbox" id="showStopDesignation" name="showStopDesignation" checked />
+            <hint>Visar spår för tåg och hållplatsläge för bussar på webbdisplayen.</hint>
+        </div>
     </div>
 
     <div class="holder">
@@ -281,7 +286,8 @@
         }
 
         // Uppdatera href-attributet med den nya URL:en
-        const url = `./display?config=${encodeURIComponent(configCode)}`;
+        const showStopDesignation = document.getElementById("showStopDesignation").checked;
+        const url = `./display?config=${encodeURIComponent(configCode)}&showStop=${showStopDesignation}`;
         document.getElementById("configLink").setAttribute("href", url);
     });
 
@@ -300,6 +306,10 @@
         border: 1px solid #ddd;
         border-radius: 8px;
         background-color: #f9f9f9;
+    }
+
+    .web-display-options {
+        margin-top: 16px;
     }
 
     .holder h2 {
