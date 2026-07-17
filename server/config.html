@@ -1,62 +1,92 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="sv">
 <head>
-    <title>T-Skylten Config Page</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ställ in T-Skylten</title>
 </head>
 
 <body>
-    <h1>T-Skylten Config Page</h1>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <span class="t-mark" aria-hidden="true">T</span>
+            <div>
+                <span class="product-name">T-Skylten</span>
+                <span class="product-description">Avgångar med data från SL</span>
+            </div>
+        </div>
+    </header>
 
-    <div class="holder">
-        <h2>Settings String</h2>
-        <div class="code-container" onclick="copyCode('configCode')">
-            <pre><code id="configCode">&lt;config incomplete - select station and lines&gt; </code></pre>
-            <pre><code id="codeCopied" class="notransition">Copied to clipboard!</code></pre>
+    <main class="page-shell">
+        <div class="page-intro">
+            <span class="eyebrow">Inställningar</span>
+            <h1>Skapa din avgångstavla</h1>
+            <p>Välj hållplats, tidsspann och vilka linjer som ska visas.</p>
+        </div>
+
+    <div class="holder holder-result">
+        <div class="section-heading">
+            <span class="step">01</span>
+            <div><h2>Din skylt</h2><p>Konfigurationen uppdateras när du gör dina val.</p></div>
+        </div>
+        <div class="code-container" onclick="copyCode('configCode')" role="button" tabindex="0" aria-label="Kopiera konfiguration">
+            <pre><code id="configCode">Välj hållplats och linjer för att skapa konfigurationen</code></pre>
+            <pre><code id="codeCopied" class="notransition">Kopierat!</code></pre>
         </div>
         <div>
             <a id="configLink" href="#" target="_blank" class="button">Öppna display</a>
         </div>
         <div class="web-display-options">
-            <label for="showStopDesignation">Visa spår/läge:</label>
+            <label for="showStopDesignation">Visa spår/läge</label>
             <input type="checkbox" id="showStopDesignation" name="showStopDesignation" checked />
             <hint>Visar spår för tåg och hållplatsläge för bussar på webbdisplayen.</hint>
         </div>
     </div>
 
     <div class="holder">
-        <h2>Choose Time in Future</h2>
-        <label for="forecast">Time in future: </label>
+        <div class="section-heading">
+            <span class="step">02</span>
+            <div><h2>Hållplats och tid</h2><p>Bestäm var och hur långt framåt skylten ska visa.</p></div>
+        </div>
+        <label for="forecast">Minuter framåt</label>
         <input type="number" id="forecast" name="forecast" value="120" min="0" max="1200" step="60" onchange="generateConfigString()" />
-        <hint>How long into the future should the departures be shown? The maximum is 1200 minutes (20 hours). It will only show a maximum of 3 departures per line.</hint>
+        <hint>Max 1 200 minuter (20 timmar). Högst tre avgångar per linje visas.</hint>
         <br><br>
-        <label for="maxSecondRow">Max Departures In Second Row: </label>
+        <label for="maxSecondRow">Max antal extra avgångar</label>
         <input type="number" id="maxSecondRow" name="maxSecondRow" value="3" min="-1" max="100" step="1" onchange="generateConfigString()" />
-        <hint>How many departures should be shown on the second row? Note that this is also limited by the 'Time in future' as well as SL's API. To show all available departures within the timeslot, set this value to -1.</hint>
-        <h2>Choose Station</h2>
-        <label for="station">Select Station:</label>
-        <input type="text" id="searchInput" placeholder="Search stations..." onkeyup="filterStations()" />
+        <hint>Välj −1 för alla tillgängliga avgångar inom tidsspannet.</hint>
+        <h3>Välj hållplats</h3>
+        <label for="station">Hållplats</label>
+        <input type="text" id="searchInput" placeholder="Sök hållplats…" onkeyup="filterStations()" />
         <select id="station" name="station" size="6" style="width: 100%;">
             <!-- Options will be dynamically added here -->
         </select>
     </div>
     <div class="holder" id="lineAndStopConfiguration">
-        <h2>Departures and Settings from/for <span id="selected_station"></span></h2>
-        <label for="includeDeviations">Include Deviations:</label>
+        <div class="section-heading">
+            <span class="step">03</span>
+            <div><h2>Avgångar från <span id="selected_station"></span></h2><p>Välj linjer och riktningar för skylten.</p></div>
+        </div>
+        <label for="includeDeviations">Visa trafikmeddelanden</label>
         <input type="checkbox" id="includeDeviations" name="includeDeviations" value="true" checked onchange="generateConfigString()" />
-        <hint>Includes information such as short trains, broken elevators, etc.</hint>
+        <hint>Visar till exempel korta tåg, inställda avgångar och trasiga hissar.</hint>
         <div style="height: 20px;"></div>
-        <p>NOTE! Make sure all lines of a certain type are unchecked if you wish to exclude it.</p>
-        <button id="includeAllDeparturesTable" onclick="includeAllDepartures()">Include all lines</button>
-        <button id="excludeAllDeparturesTable" onclick="excludeAllDepartures()">Exclude all lines</button>
+        <p class="notice">Avmarkera alla linjer inom ett trafikslag om du vill utesluta det helt.</p>
+        <button id="includeAllDeparturesTable" onclick="includeAllDepartures()">Välj alla</button>
+        <button class="button-secondary" id="excludeAllDeparturesTable" onclick="excludeAllDepartures()">Avmarkera alla</button>
         <table id="departuresTable">
         </table>
     </div>
     <div class="holder" id="additionalLinesConfiguration">
-        <h2>Include Additional Lines</h2>
+        <div class="section-heading">
+            <span class="step">04</span>
+            <div><h2>Lägg till fler linjer</h2><p>Ta med linjer som inte går från den valda hållplatsen just nu.</p></div>
+        </div>
         <table id="additionalLinesTable">
         </table>
     </div>
+    </main>
 </body>
 
 <script>
@@ -142,9 +172,16 @@
         }, 1000);
     }
 
+    document.querySelector(".code-container").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            copyCode("configCode");
+        }
+    });
+
     function generateConfigString() {
         if (!selectedStation) {
-            document.getElementById("configCode").textContent = "<config incomplete - select station and lines>";
+            document.getElementById("configCode").textContent = "Välj hållplats och linjer för att skapa konfigurationen";
             return;
         }
 
@@ -195,7 +232,7 @@
 
     function regererateDeparturesTable() {
         const table = document.getElementById("departuresTable");
-        table.innerHTML = "<tr> <th>Line</th> <th>Destination</th> <th>Include Line</th> <th>Limit To This Direction</th> </tr>";
+        table.innerHTML = "<tr> <th>Linje</th> <th>Mot</th> <th>Visa</th> <th>Bara denna riktning</th> </tr>";
 
         const seen = [];
         for (let i = 0; i < departures.departures.length; i++) {
@@ -221,7 +258,7 @@
 
     function regerateAdditionalLinesTable() {
         const additionalLinesTable = document.getElementById("additionalLinesTable");
-        additionalLinesTable.innerHTML = "<tr> <th>Type</th> <th>Line</th> <th>Group</th> <th>Include Line</th> </tr>";
+        additionalLinesTable.innerHTML = "<tr> <th>Trafikslag</th> <th>Linje</th> <th>Grupp</th> <th>Visa</th> </tr>";
         for (let type in lines) {
             for (let line of lines[type]) {
                 const row = document.createElement("tr");
@@ -279,7 +316,7 @@
         const configCode = document.getElementById("configCode").textContent;
 
         // Kontrollera att configCode inte är ofullständig
-        if (configCode.includes("incomplete")) {
+        if (!selectedStation) {
             alert("Config är ofullständig! Välj station och linjer först.");
             event.preventDefault(); // Hindra länken från att öppnas
             return;
@@ -453,6 +490,313 @@
 
     .button:hover {
         background-color: #a3a3a3;
+    }
+</style>
+<style>
+    @font-face {
+        font-family: "SL Gothic";
+        src: url("/assets/fonts/slgothictext2-regular.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: "SL Gothic";
+        src: url("/assets/fonts/slgothictext2-bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: "SL Gothic Display";
+        src: url("/assets/fonts/slgothicdisplay-bold.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+    }
+
+    :root {
+        color-scheme: light;
+        --sl-blue: #2870f0;
+        --sl-blue-dark: #0a47c2;
+        --sl-black: #12151a;
+        --sl-page: #f1f3f5;
+        --sl-card: #fff;
+        --sl-border: #c8cdd3;
+        --sl-muted: #5b626b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: var(--sl-page);
+        color: var(--sl-black);
+        font-family: "SL Gothic", Arial, sans-serif;
+        font-size: 18px;
+        line-height: 1.45;
+    }
+
+    .site-header {
+        background: var(--sl-blue);
+        color: #fff;
+    }
+
+    .site-header-inner {
+        display: flex;
+        width: min(1180px, calc(100% - 40px));
+        min-height: 112px;
+        margin: 0 auto;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .t-mark {
+        display: grid;
+        width: 68px;
+        height: 68px;
+        flex: 0 0 auto;
+        place-items: center;
+        border: 4px solid #fff;
+        border-radius: 50%;
+        font-family: "SL Gothic Display", "SL Gothic", sans-serif;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .product-name,
+    .product-description { display: block; }
+
+    .product-name {
+        font-family: "SL Gothic Display", "SL Gothic", sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .product-description { margin-top: 5px; font-size: 16px; }
+
+    .page-shell {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 56px 0 96px;
+    }
+
+    .page-intro { max-width: 760px; margin-bottom: 40px; }
+
+    .eyebrow {
+        color: var(--sl-blue-dark);
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+        font-family: "SL Gothic Display", "SL Gothic", sans-serif;
+        font-weight: 700;
+    }
+
+    h1 {
+        margin: 6px 0 8px;
+        font-size: clamp(40px, 6vw, 64px);
+        line-height: 1.05;
+    }
+
+    .page-intro p { margin: 0; color: var(--sl-muted); font-size: 21px; }
+
+    .holder {
+        margin: 0 0 24px;
+        padding: clamp(24px, 4vw, 42px);
+        border: 1px solid var(--sl-border);
+        border-radius: 8px;
+        background: var(--sl-card);
+    }
+
+    .holder-result { border-top: 8px solid var(--sl-blue); }
+
+    .section-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .section-heading h2 { margin: 0; font-size: clamp(26px, 3vw, 34px); line-height: 1.15; }
+    .section-heading p { margin: 6px 0 0; color: var(--sl-muted); }
+
+    .step {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--sl-black);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    h3 { margin: 36px 0 16px; font-size: 24px; }
+
+    label,
+    .holder label {
+        display: inline-block;
+        margin: 0 8px 8px 0;
+        font-weight: 700;
+    }
+
+    hint {
+        display: block;
+        max-width: 720px;
+        margin: 4px 0 22px;
+        color: var(--sl-muted);
+        font-size: 16px;
+        line-height: 1.45;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        min-height: 48px;
+        padding: 11px 14px;
+        border: 2px solid #7a828d;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--sl-black);
+        font: inherit;
+    }
+
+    input[type="text"] { display: block; width: min(100%, 560px); margin-bottom: 12px; }
+    input[type="number"] { width: 124px; margin-bottom: 4px; }
+
+    select {
+        height: 260px !important;
+        padding: 6px;
+    }
+
+    select option { padding: 10px; border-radius: 4px; }
+
+    input:focus,
+    select:focus,
+    button:focus-visible,
+    a:focus-visible,
+    .code-container:focus-visible {
+        outline: 3px solid #12151a;
+        outline-offset: 3px;
+    }
+
+    input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        margin: 0 8px 0 0;
+        vertical-align: -5px;
+        accent-color: var(--sl-blue);
+    }
+
+    button,
+    .button {
+        display: inline-flex;
+        min-height: 48px;
+        margin: 8px 8px 8px 0;
+        padding: 0 20px;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--sl-blue);
+        border-radius: 8px;
+        background: var(--sl-blue);
+        color: #fff;
+        font-family: "SL Gothic", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color .15s ease, border-color .15s ease;
+    }
+
+    button:hover,
+    .button:hover { background: var(--sl-blue-dark); border-color: var(--sl-blue-dark); }
+
+    .button-secondary {
+        background: #fff;
+        color: var(--sl-blue-dark);
+    }
+
+    .button-secondary:hover { background: #e9f0ff; color: var(--sl-blue-dark); }
+
+    .web-display-options {
+        margin-top: 26px;
+        padding-top: 24px;
+        border-top: 1px solid var(--sl-border);
+    }
+
+    .code-container {
+        position: relative;
+        margin-bottom: 20px;
+        padding: 20px;
+        overflow: hidden;
+        border: 0;
+        border-radius: 8px;
+        background: var(--sl-black);
+        cursor: copy;
+    }
+
+    pre { margin: 0; background: transparent; white-space: pre-wrap; }
+
+    code {
+        padding: 0;
+        background: transparent;
+        color: #fff;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 15px;
+        line-height: 1.5;
+        word-break: break-all;
+    }
+
+    pre code#codeCopied {
+        inset: 0;
+        display: grid;
+        place-items: center;
+        width: 100%;
+        transform: none;
+        background: var(--sl-blue);
+        color: #fff;
+    }
+
+    .notice {
+        padding: 16px 18px;
+        border-left: 6px solid #c8783a;
+        background: #f9eee6;
+    }
+
+    table {
+        width: 100%;
+        margin-top: 24px;
+        border-collapse: collapse;
+        font-size: 17px;
+    }
+
+    th, td { padding: 14px 12px; border: 0; border-bottom: 1px solid var(--sl-border); text-align: left; }
+    th { background: var(--sl-black); color: #fff; font-weight: 700; }
+    tr:nth-child(even) { background: #f7f8f9; }
+    tr:hover { background: #e9f0ff; }
+
+    @media (max-width: 720px) {
+        .site-header-inner,
+        .page-shell { width: min(100% - 24px, 1180px); }
+        .site-header-inner { min-height: 92px; }
+        .t-mark { width: 56px; height: 56px; font-size: 30px; }
+        .page-shell { padding: 36px 0 64px; }
+        .holder { padding: 24px 18px; overflow-x: auto; }
+        .section-heading { gap: 12px; }
+        .step { width: 38px; height: 38px; }
+        table { min-width: 680px; }
     }
 </style>
 </html>
